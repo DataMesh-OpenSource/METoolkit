@@ -1,0 +1,102 @@
+{
+  "name": "MainMenu",
+  "rootPanel": {
+    "buttons": [
+      {
+        "buttonId": "button2",
+        "buttonName": "Second",
+        "buttonColor": {
+          "r": 1.0,
+          "g": 0.45588237,
+          "b": 0.5346855,
+          "a": 1.0
+        },
+        "buttonPic": "icon_remove",
+        "canClick": true,
+        "subPanel": null
+      },
+      {
+        "buttonId": "button1",
+        "buttonName": "First",
+        "buttonColor": {
+          "r": 0.0117647061,
+          "g": 0.6627451,
+          "b": 0.956862748,
+          "a": 1.0
+        },
+        "buttonPic": "icon_load",
+        "canClick": true,
+        "subPanel": {
+          "buttons": [
+            {
+              "buttonId": "sub_button2",
+              "buttonName": "Sub Button 2",
+              "buttonColor": {
+                "r": 0.956862748,
+                "g": 0.539716,
+                "b": 0.0117646921,
+                "a": 1.0
+              },
+              "buttonPic": "icon_eye",
+              "canClick": true,
+              "subPanel": null
+            },
+            {
+              "buttonId": "sub_button1",
+              "buttonName": "Sub Button 1",
+              "buttonColor": {
+                "r": 0.3661764,
+                "g": 0.6397059,
+                "b": 0.0,
+                "a": 1.0
+              },
+              "buttonPic": "icon_add",
+              "canClick": true,
+              "subPanel": null
+            },
+            {
+              "buttonId": "sub_button3",
+              "buttonName": "Sub Button 3",
+              "buttonColor": {
+                "r": 0.410804,
+                "g": 0.1634948,
+                "b": 0.9264706,
+                "a": 1.0
+              },
+              "buttonPic": "icon_config",
+              "canClick": true,
+              "subPanel": null
+            },
+            null
+          ]
+        }
+      },
+      {
+        "buttonId": "button3",
+        "buttonName": "Thrid",
+        "buttonColor": {
+          "r": 0.0117647061,
+          "g": 0.6627451,
+          "b": 0.956862748,
+          "a": 1.0
+        },
+        "buttonPic": "icon_snap",
+        "canClick": true,
+        "subPanel": null
+      },
+      {
+        "buttonId": "button4",
+        "buttonName": "Fourth",
+        "buttonColor": {
+          "r": 0.0117647061,
+          "g": 0.6627451,
+          "b": 0.956862748,
+          "a": 1.0
+        },
+        "buttonPic": "icon_video",
+        "canClick": true,
+        "subPanel": null
+      }
+    ]
+  }
+}

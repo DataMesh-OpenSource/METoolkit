@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &100100000
+Prefab:
+  m_ObjectHideFlags: 1
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications: []
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 0}
+  m_RootGameObject: {fileID: 1773843455502652}
+  m_IsPrefabParent: 1
+--- !u!1 &1773843455502652
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4875441657443836}
+  - component: {fileID: 114046668314288926}
+  m_Layer: 0
+  m_Name: MeHoloEntrance
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4875441657443836
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1773843455502652}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &114046668314288926
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1773843455502652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69ffe1efb22f5a54187a98e231ddf4fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CommonPrefab: {fileID: 1327194062710436, guid: f1e9736e23e323746b52699c08120889,
+    type: 2}
+  AnchorPrefab: {fileID: 1213177251853286, guid: a63734d788aa60e488ed79511a9643e2,
+    type: 2}
+  InputPrefab: {fileID: 1331324292690694, guid: f1d4a397704663849abaa7ba51960901,
+    type: 2}
+  SpeechPrefab: {fileID: 1447328362248054, guid: 08289698a035c754793fd0173538473f,
+    type: 2}
+  MenuPrefab: {fileID: 1882594667235246, guid: 59623d34567116f45a84cc78a70ca610, type: 2}
+  CursorPrefab: {fileID: 1836893036308834, guid: 6786c9a70878e034eb54f46088eb560a,
+    type: 2}
+  CollaborationPrefab: {fileID: 1354366615361850, guid: 1af9c295d1745e4429f5d150fd51d7dd,
+    type: 2}
+  SocialPrefab: {fileID: 1830974446417084, guid: 89c0d4976c3d3914fb7eaf71b5a4cdd5,
+    type: 2}
+  LivePrefab: {fileID: 1597044963658734, guid: 649fced0e7f51de4080b624678e05793, type: 2}
+  NeedAnchor: 1
+  NeedInput: 1
+  NeedSpeech: 1
+  NeedMenu: 1
+  NeedCursor: 1
+  NeedCollaboration: 1
+  NeedSocial: 1
+  NeedLive: 1
+  HasInit: 0
