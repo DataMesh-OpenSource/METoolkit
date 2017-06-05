@@ -15,6 +15,9 @@ METoolkit consists of nine components for a wide range of functionalities.
 <img src="https://github.com/DataMesh-OpenSource/MeshExpert-Live/blob/master/resources/METoolkit-Structure.png" width="500">
 </p>
 
+## Documentation
+
+For more detailed documentations for METoolkit, see the [**MeshExpert Live! Docs**](http://docs.datamesh.com/projects/me-live/ "MeshExpert Live! Documentations").
 
 ## License
 
