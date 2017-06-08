@@ -20,7 +20,7 @@ namespace DataMesh.AR.UI
         private bool dirty = false;
 
         private int[] order = { 1, 0, 2, 3 };
-        private string[] names = { "右上", "左上", "左下", "右下" };
+        private string[] names = { "Right Top", "Left Top", "Left Bottom", "Right Bottom" };
 
 
         [MenuItem("Window/DataMesh/BlockMenuMaker")]
@@ -38,11 +38,11 @@ namespace DataMesh.AR.UI
 
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
 
-            if (GUILayout.Button("读取菜单配置"))
+            if (GUILayout.Button("Load Menu Data"))
             {
                 if (bm.menu != null && dirty)
                 {
-                    if (!EditorUtility.DisplayDialog("confirm", "似乎有修改还没有存盘，你是否要放弃修改，并打开新文件？", "打开文件", "取消"))
+                    if (!EditorUtility.DisplayDialog("confirm", "Current menu has not been saved. Give up all changes and load menu?", "Yes", "Cancel"))
                     {
                         return;
                     }
@@ -60,11 +60,11 @@ namespace DataMesh.AR.UI
 
             }
 
-            if (GUILayout.Button("创建新的菜单配置"))
+            if (GUILayout.Button("Create Mew Menu"))
             {
                 if (bm.menu != null && dirty)
                 {
-                    if (!EditorUtility.DisplayDialog("confirm", "似乎有修改还没有存盘，你是否要放弃修改，并创建新配置？", "创建", "取消"))
+                    if (!EditorUtility.DisplayDialog("confirm", "Current menu has not been saved. Give up all changes and create new menu?", "Yes", "Cancel"))
                     {
                         return;
                     }
@@ -85,7 +85,7 @@ namespace DataMesh.AR.UI
 
             }
 
-            if (GUILayout.Button("存  盘"))
+            if (GUILayout.Button("Save Menu"))
             {
                 if (dirty && filePath != null)
                 {
@@ -97,13 +97,13 @@ namespace DataMesh.AR.UI
 
             }
 
-            if (GUILayout.Button("清  空"))
+            if (GUILayout.Button("Clean Menu"))
             {
                 if (dirty && filePath != null)
                 {
                     if (bm.menu != null && dirty)
                     {
-                        if (!EditorUtility.DisplayDialog("confirm", "似乎有修改还没有存盘，你是否放弃所有修改？", "是", "取消"))
+                        if (!EditorUtility.DisplayDialog("confirm", "Current menu has not been saved. Give up all changes?", "Yes", "Cancel"))
                         {
                             return;
                         }
@@ -133,7 +133,7 @@ namespace DataMesh.AR.UI
 
             GUI.changed = false;
 
-            bm.menu.name = EditorGUILayout.TextField("面板名称", bm.menu.name);
+            bm.menu.name = EditorGUILayout.TextField("Menu Name", bm.menu.name);
 
             if (GUI.changed)
                 dirty = true;
@@ -143,7 +143,7 @@ namespace DataMesh.AR.UI
 
             if (bm.menu.rootPanel == null)
             {
-                if (GUILayout.Button("创建根面板"))
+                if (GUILayout.Button("Create Root Panel"))
                 {
                     BlockPanelData panel = new BlockPanelData();
                     bm.menu.rootPanel = panel;
@@ -177,7 +177,7 @@ namespace DataMesh.AR.UI
                 panel.buttons.Add(null);
             }
 
-            string panelTitle = level == 1 ? "根菜单" : "第" + level + "层菜单";
+            string panelTitle = level == 1 ? "Root Panel" : "Level " + level + " Panel";
 
             if (EditorTools.DrawHeader(panelTitle))
             {
@@ -189,14 +189,14 @@ namespace DataMesh.AR.UI
                     int quadrant = order[i];
                     string name = names[i];
 
-                    if (EditorTools.DrawHeader(panelTitle + " : " + names[quadrant] + "按钮"))
+                    if (EditorTools.DrawHeader(panelTitle + " -- " + names[quadrant] + " Button"))
                     {
 
                         EditorTools.BeginContents();
 
                         if (IsOppositeQuadrant(quadrant, fromQuadrant))
                         {
-                            EditorGUILayout.LabelField("不可用");
+                            EditorGUILayout.LabelField("Can not use");
                         }
                         else
                         {
@@ -204,7 +204,7 @@ namespace DataMesh.AR.UI
 
                             if (button == null)
                             {
-                                if (GUILayout.Button("创建按钮"))
+                                if (GUILayout.Button("Create Button"))
                                 {
                                     button = new BlockButtonData();
                                     panel.buttons[quadrant] = button;
@@ -214,7 +214,7 @@ namespace DataMesh.AR.UI
                             else
                             {
                                 DrawBlockButton(button, quadrant, level);
-                                if (GUILayout.Button("删除按钮"))
+                                if (GUILayout.Button("Delete Button"))
                                 {
                                     panel.buttons[quadrant] = null;
                                     dirty = true;
@@ -241,17 +241,17 @@ namespace DataMesh.AR.UI
             BlockMenuDataManager bm = BlockMenuDataManager.Instance;
 
             GUI.changed = false;
-            button.buttonId = EditorGUILayout.TextField("按钮ID", button.buttonId);
-            button.buttonName = EditorGUILayout.TextField("按钮名称", button.buttonName);
-            button.buttonColor = EditorGUILayout.ColorField("按钮颜色", button.buttonColor);
-            button.buttonPic = EditorGUILayout.TextField("使用图片", button.buttonPic);
-            button.canClick = EditorGUILayout.Toggle("可否点击", button.canClick);
+            button.buttonId = EditorGUILayout.TextField("Button ID", button.buttonId);
+            button.buttonName = EditorGUILayout.TextField("Button Name", button.buttonName);
+            button.buttonColor = EditorGUILayout.ColorField("Button Color", button.buttonColor);
+            button.buttonPic = EditorGUILayout.TextField("Button Pic", button.buttonPic);
+            button.canClick = EditorGUILayout.Toggle("Can Click?", button.canClick);
             if (GUI.changed)
                 dirty = true;
 
             if (button.subPanel == null)
             {
-                if (GUILayout.Button("创建子面板"))
+                if (GUILayout.Button("Create Sub Panel"))
                 {
                     button.subPanel = new BlockPanelData();
                     dirty = true;
