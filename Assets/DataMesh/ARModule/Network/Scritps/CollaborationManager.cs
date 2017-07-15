@@ -82,6 +82,7 @@ namespace DataMesh.AR.Network
 
         public EnterRoomResult enterRoomResult { get; private set; }
         public string errorString { get; private set; }
+        public long roomInitTime { get; private set; }
 
         protected override void Awake()
         {
@@ -106,6 +107,7 @@ namespace DataMesh.AR.Network
         protected override void _Init()
         {
             clientId = SystemInfo.deviceUniqueIdentifier;
+            Debug.Log("client=" + clientId);
 
             clientId = MD5Hash.Hash(Encoding.UTF8.GetBytes(clientId));
             Debug.Log("client=" + clientId);
@@ -275,13 +277,12 @@ namespace DataMesh.AR.Network
                         enterRoomResult = EnterRoomResult.SocketCreateError;
                         errorString = e.ToString();
                     }
-                    if (enterRoomResult == EnterRoomResult.Waiting)
-                    {
-                        if (cbEnterRoom != null)
-                            cbEnterRoom();
 
-                        enterRoomResult = EnterRoomResult.EnterRoomSuccess;
-                    }
+                    roomInitTime = enterRoomResponse.InitRoomTime;
+                    enterRoomResult = EnterRoomResult.EnterRoomSuccess;
+
+                    if (cbEnterRoom != null)
+                        cbEnterRoom();
                 }
                 else
                 {

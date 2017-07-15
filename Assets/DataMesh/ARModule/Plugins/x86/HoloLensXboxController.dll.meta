@@ -14,13 +14,13 @@ PluginImporter:
       settings:
         Exclude Editor: 0
         Exclude Linux: 0
-        Exclude Linux64: 0
+        Exclude Linux64: 1
         Exclude LinuxUniversal: 0
         Exclude OSXIntel: 0
-        Exclude OSXIntel64: 0
+        Exclude OSXIntel64: 1
         Exclude OSXUniversal: 0
         Exclude Win: 0
-        Exclude Win64: 0
+        Exclude Win64: 1
         Exclude WindowsStoreApps: 1
     Editor:
       enabled: 1
@@ -33,7 +33,7 @@ PluginImporter:
       settings:
         CPU: x86
     Linux64:
-      enabled: 1
+      enabled: 0
       settings:
         CPU: None
     LinuxUniversal:
@@ -45,7 +45,7 @@ PluginImporter:
       settings:
         CPU: AnyCPU
     OSXIntel64:
-      enabled: 1
+      enabled: 0
       settings:
         CPU: None
     OSXUniversal:
@@ -57,7 +57,7 @@ PluginImporter:
       settings:
         CPU: AnyCPU
     Win64:
-      enabled: 1
+      enabled: 0
       settings:
         CPU: None
     WindowsStoreApps:
