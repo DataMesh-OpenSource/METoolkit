@@ -8,22 +8,24 @@ using DataMesh.AR.SpectatorView;
 using DataMesh.AR.UI;
 using DataMesh.AR.Network;
 using DataMesh.AR.MRC;
+using DataMesh.AR.Storage;
 using DataMesh.AR.Utility;
 
 namespace DataMesh.AR
 {
     public class MEHoloEntrance : MonoBehaviour
     {
-
         public static MEHoloEntrance Instance { get; private set; }
+
+        public string AppID = null;
 
         public GameObject CommonPrefab;
         public GameObject AnchorPrefab;
         public GameObject InputPrefab;
         public GameObject SpeechPrefab;
-        public GameObject MenuPrefab;
-        public GameObject CursorPrefab;
+        public GameObject UIPerfab;
         public GameObject CollaborationPrefab;
+        public GameObject StoragePrefab;
         public GameObject SocialPrefab;
         public GameObject LivePrefab;
 
@@ -34,11 +36,11 @@ namespace DataMesh.AR
         [HideInInspector]
         public bool NeedSpeech = true;
         [HideInInspector]
-        public bool NeedMenu = true;
-        [HideInInspector]
-        public bool NeedCursor = true;
+        public bool NeedUI = true;
         [HideInInspector]
         public bool NeedCollaboration = true;
+        [HideInInspector]
+        public bool NeedStorage = true;
         [HideInInspector]
         public bool NeedSocial = true;
         [HideInInspector]
@@ -50,13 +52,13 @@ namespace DataMesh.AR
 
 
         private SceneAnchorController anchorController;
-        private LiveController bevController;
-        private CursorController cursorController;
+        private LiveController liveController;
         private MultiInputManager inputManager;
         private SpeechManager speechManager;
-        private BlockMenuManager menuManager;
+        private UIManager uiManager;
         private CollaborationManager collaborationManager;
         private MixedRealityCapture mrc;
+        private StorageManager storageManager;
 
         private List<bool> moduleSwitch = new List<bool>();
         private List<MEHoloModule> moduleList = new List<MEHoloModule>();
@@ -69,36 +71,64 @@ namespace DataMesh.AR
         // Use this for initialization
         void Start()
         {
+            StartCoroutine(CheckSystem());
+        }
+
+        /// <summary>
+        /// 检查系统是否满足条件 
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator CheckSystem()
+        {
+            // 检查应用名称是否已经设置 
+            while (string.IsNullOrEmpty(AppID))
+            {
+                Debug.LogError("AppName can not be null! Please set AppName.");
+                yield return new WaitForSeconds(1);
+            }
+
+            InitSystem();
+        }
+
+        /// <summary>
+        /// 初始化系统 
+        /// </summary>
+        private void InitSystem()
+        {
             anchorController = SceneAnchorController.Instance;
-            bevController = LiveController.Instance;
-            cursorController = CursorController.Instance;
+            liveController = LiveController.Instance;
             inputManager = MultiInputManager.Instance;
             speechManager = SpeechManager.Instance;
-            menuManager = BlockMenuManager.Instance;
+            uiManager = UIManager.Instance;
             collaborationManager = CollaborationManager.Instance;
+            storageManager = StorageManager.Instance;
+
             mrc = MixedRealityCapture.Instance;
 
             moduleSwitch.Add(NeedAnchor);
             moduleSwitch.Add(NeedInput);
             moduleSwitch.Add(NeedSpeech);
-            moduleSwitch.Add(NeedMenu);
-            moduleSwitch.Add(NeedCursor);
+            moduleSwitch.Add(NeedUI);
             moduleSwitch.Add(NeedCollaboration);
+            moduleSwitch.Add(NeedStorage);
             moduleSwitch.Add(NeedSocial);
             moduleSwitch.Add(NeedLive);
 
             moduleList.Add(anchorController);
             moduleList.Add(inputManager);
             moduleList.Add(speechManager);
-            moduleList.Add(menuManager);
-            moduleList.Add(cursorController);
+            moduleList.Add(uiManager);
             moduleList.Add(collaborationManager);
+            moduleList.Add(storageManager);
             moduleList.Add(mrc);
-            moduleList.Add(bevController);
+            moduleList.Add(liveController);
 
             // 按需求启动模块 
-            for (int i = 0;i < moduleSwitch.Count;i ++)
+            for (int i = 0; i < moduleSwitch.Count; i++)
             {
+                if (moduleList[i] == null)
+                    continue;
+
                 if (moduleSwitch[i])
                 {
                     moduleList[i].gameObject.SetActive(true);

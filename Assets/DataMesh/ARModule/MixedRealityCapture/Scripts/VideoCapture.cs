@@ -27,17 +27,24 @@ namespace DataMesh.AR.MRC {
 
 #if UNITY_METRO && !UNITY_EDITOR
             //StartVideoCaptureTest();
-            Resolution cameraResolution = VideoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-            //Debug.Log(cameraResolution);
+            try
+            {
+                Resolution cameraResolution = VideoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
+                //Debug.Log(cameraResolution);
 
-            float cameraFramerate = VideoCapture.GetSupportedFrameRatesForResolution(cameraResolution).OrderByDescending((fps) => fps).First();
-            //Debug.Log(cameraFramerate);
-            cameraParameters = new CameraParameters();
-            cameraParameters.hologramOpacity = 1.0f;
-            cameraParameters.frameRate = cameraFramerate;
-            cameraParameters.cameraResolutionWidth = cameraResolution.width;
-            cameraParameters.cameraResolutionHeight = cameraResolution.height;
-            cameraParameters.pixelFormat = CapturePixelFormat.BGRA32;
+                float cameraFramerate = VideoCapture.GetSupportedFrameRatesForResolution(cameraResolution).OrderByDescending((fps) => fps).First();
+                //Debug.Log(cameraFramerate);
+                cameraParameters = new CameraParameters();
+                cameraParameters.hologramOpacity = 1.0f;
+                cameraParameters.frameRate = cameraFramerate;
+                cameraParameters.cameraResolutionWidth = cameraResolution.width;
+                cameraParameters.cameraResolutionHeight = cameraResolution.height;
+                cameraParameters.pixelFormat = CapturePixelFormat.BGRA32;
+            }
+            catch (System.Exception e)
+            {
+
+            }
 
             //StartVideoCaptureTest();
 #endif

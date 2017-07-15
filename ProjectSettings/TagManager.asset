@@ -38,9 +38,15 @@ TagManager:
   - 
   - 
   m_SortingLayers:
-  - name: AnchorUI
-    uniqueID: 3162902379
+  - name: StorageBg
+    uniqueID: 1438566917
     locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: AnchorUI
+    uniqueID: 3162902379
+    locked: 0
+  - name: StorageUI
+    uniqueID: 212895311
     locked: 0

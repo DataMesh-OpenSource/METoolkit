@@ -5,8 +5,12 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using DataMesh.AR.Utility;
+
 using MEHoloClient.Queue;
 using MEHoloClient.Entities;
+using MEHoloClient.Core.Entities;
+using MEHoloClient.Proto;
 using MEHoloClient.Interface.Sync;
 using MEHoloClient.Sync;
 using MEHoloClient.Sync.Time;
@@ -21,6 +25,25 @@ using Windows.Networking.Sockets;
 
 namespace DataMesh.AR.Network
 {
+    public enum CollaborationMessageType
+    {
+        ProtoBuf,
+        JSON
+    }
+
+    public enum EnterRoomResult
+    {
+        Waiting,
+        EnterRoomSuccess,
+        LicenseMissing,
+        LicenseExpired,
+        RoomNotExist,
+        DeviceReachesLimit,
+        GameHasStarted,
+        SocketCreateError,
+        UnknownError
+    }
+
     /// <summary>
     /// 与服务器房间连接的控制类 
     /// </summary>
@@ -30,11 +53,6 @@ namespace DataMesh.AR.Network
         /// 房间名称 
         /// </summary>
         public string roomId = "";
-
-        /// <summary>
-        /// 所使用的应用名称
-        /// </summary>
-        public int appId = 1;
 
         /// <summary>
         /// 用户识别ID
@@ -47,11 +65,7 @@ namespace DataMesh.AR.Network
         /// </summary>
         public string serverHost = "";
 
-        /// <summary>
-        /// 服务器端口
-        /// </summary>
-        [HideInInspector]
-        public int serverPort = 80;
+        public CollaborationMessageType messageType = CollaborationMessageType.ProtoBuf;
 
         public List<IMessageHandler> messageHandlerList = new List<IMessageHandler>();
 
@@ -64,12 +78,10 @@ namespace DataMesh.AR.Network
 
         public System.Action cbEnterRoom;
 
-        public SceneObjects roomInitData;
+        public SceneObject roomInitData;
 
-        public long roomInitTime { get; private set; }
-
-        [HideInInspector]
-        public bool hasEnterRoom = false;
+        public EnterRoomResult enterRoomResult { get; private set; }
+        public string errorString { get; private set; }
 
         protected override void Awake()
         {
@@ -97,16 +109,32 @@ namespace DataMesh.AR.Network
 
             clientId = MD5Hash.Hash(Encoding.UTF8.GetBytes(clientId));
             Debug.Log("client=" + clientId);
+
+            enterRoomResult = EnterRoomResult.Waiting;
         }
 
         protected override void _TurnOn()
         {
+            AppConfig config = AppConfig.Instance;
+            config.LoadConfig(MEHoloConstant.NetworkConfigFile);
+            serverHost = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
+
+            roomId = RoomManager.Instance.GetCurrentRoom();
+
             StartEnterRoom();
         }
 
         protected override void _TurnOff()
         {
             
+        }
+
+        public bool IsValid()
+        {
+            if (syncClient == null)
+                return false;
+
+            return syncClient.Running;
         }
 
         /// <summary>
@@ -124,9 +152,10 @@ namespace DataMesh.AR.Network
         /// <param name="cb"></param>
         private void StartEnterRoom()
         {
+            socketUrl = "ws://" + serverHost + "/me/live/register/" + MEHoloEntrance.Instance.AppID + "/" + roomId + "/" + clientId;
+            socketUrlForSyncTime = "ws://" + serverHost + "/me/live/time";
 
-            socketUrl = "ws://" + serverHost + "/holocenter/sync/register/" + appId + "/" + roomId + "/" + clientId;
-            socketUrlForSyncTime = "ws://" + serverHost + "/holocenter/sync/time";
+            Debug.Log("Sync Time Url=" + socketUrlForSyncTime);
 
             Debug.Log("Prepare To EnterRoom");
 
@@ -181,53 +210,116 @@ namespace DataMesh.AR.Network
             return syncTimeClient.Delay;
         }
 
+        /// <summary>
+        /// 重新尝试进入房间 
+        /// </summary>
+        /// <param name="delayTime"></param>
+        public void ReEnterRoom(float delayTime)
+        {
+            if　(enterRoomResult == EnterRoomResult.Waiting || enterRoomResult == EnterRoomResult.EnterRoomSuccess)
+            {
+                return;
+            }
+
+            enterRoomResult = EnterRoomResult.Waiting;
+
+            StartCoroutine(ReconnectRoom(delayTime));
+        }
+
+        private IEnumerator ReconnectRoom(float delayTime)
+        {
+            yield return new WaitForSeconds(delayTime);
+
+            SendEnterRoom();
+        }
+
 #if UNITY_METRO && !UNITY_EDITOR
         private async void SendEnterRoom()
-        {
-            // 尝试加入房间
-            syncApi = new SyncApi("http://" + serverHost + "/holocenter");
-            Debug.Log("ip=" + serverHost);
-            Debug.Log("app=" + appId + " room=" + roomId + " init=" + roomInitData);
-
-            try
-            {
-                roomInitTime = await syncApi.EnterAppRoom(appId, roomId, roomInitData);
-                ConnectToRoom();
-                if (cbEnterRoom != null)
-                    cbEnterRoom();
-                hasEnterRoom = true;
-            }
-            catch (Exception e)
-            {
-                // 失败了！可能需要重连！ 
-                Debug.LogError("Enter Room Failed!");
-            }
-        }
 #else
         private void SendEnterRoom()
+#endif
         {
-            // 尝试加入房间
-            string url = "http://" + serverHost + "/holocenter";
-            Debug.Log("SyncApi url=" + url);
-            syncApi = new SyncApi(url);
-            Debug.Log("ip=" + serverHost);
-            Debug.Log("app=" + appId + " room=" + roomId + " init=" + roomInitData);
+            enterRoomResult = EnterRoomResult.Waiting;
 
+            // 尝试加入房间
+            syncApi = new SyncApi("http://" + serverHost + "");
+            Debug.Log("ip=" + serverHost);
+            Debug.Log("app=" + MEHoloEntrance.Instance.AppID + " room=" + roomId + " init=" + roomInitData);
+
+            QueryRoomResponse enterRoomResponse = null;
             try
             {
-                roomInitTime = syncApi.EnterAppRoom(appId, roomId, roomInitData);
-                ConnectToRoom();
-                if (cbEnterRoom != null)
-                    cbEnterRoom();
-                hasEnterRoom = true;
+#if UNITY_METRO && !UNITY_EDITOR
+                enterRoomResponse = await syncApi.EnterAppRoom(MEHoloEntrance.Instance.AppID, roomId, roomInitData);
+#else
+                enterRoomResponse = syncApi.EnterAppRoom(MEHoloEntrance.Instance.AppID, roomId, roomInitData);
+#endif
             }
             catch (Exception e)
             {
-                // 失败了！可能需要重连！ 
                 Debug.LogError("Enter Room Failed! " + e);
+                errorString = e.ToString();
+            }
+
+            if (enterRoomResponse != null)
+            {
+                if (enterRoomResponse.CanEnterAppRoom)
+                {
+                    try
+                    {
+                        ConnectToRoom();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError("Connect Room ws Failed! " + e);
+                        enterRoomResult = EnterRoomResult.SocketCreateError;
+                        errorString = e.ToString();
+                    }
+                    if (enterRoomResult == EnterRoomResult.Waiting)
+                    {
+                        if (cbEnterRoom != null)
+                            cbEnterRoom();
+
+                        enterRoomResult = EnterRoomResult.EnterRoomSuccess;
+                    }
+                }
+                else
+                {
+                    switch (enterRoomResponse.Code)
+                    {
+                        case 6001:      // Missing License
+                            enterRoomResult = EnterRoomResult.LicenseMissing;
+                            break;
+                        case 6002:      // license expired
+                            enterRoomResult = EnterRoomResult.LicenseExpired;
+                            break;
+                        case 6003:      // Room not exist
+                            enterRoomResult = EnterRoomResult.RoomNotExist;
+                            break;
+                        case 6004:      // Device limit
+                            enterRoomResult = EnterRoomResult.DeviceReachesLimit;
+                            break;
+                        case 6005:      // Game has started
+                            enterRoomResult = EnterRoomResult.GameHasStarted;
+                            break;
+                        default:        // Unknown error
+                            Debug.Log("error?? " + enterRoomResponse.Code);
+                            enterRoomResult = EnterRoomResult.UnknownError;
+                            break;
+                    }
+
+                    errorString = enterRoomResponse.Message;
+                }
+
+            }
+            else
+            {
+                enterRoomResult = EnterRoomResult.UnknownError;
             }
         }
 
+#if UNITY_METRO && !UNITY_EDITOR
+#else
         void OnApplicationQuit()
         {
             if (syncClient != null)
@@ -259,24 +351,55 @@ namespace DataMesh.AR.Network
         /// 发送房间同步消息
         /// </summary>
         /// <param name="msgEntries"></param>
-        public void SendMessage(MsgEntry[] msgEntries)
+        public bool SendMessage(SyncMsg msg)
         {
             if (syncClient == null)
-                return;
+                return false;
 
             if (!syncClient.Running)
-                return;
+                return false;
 
-            SyncMsg msg = new SyncMsg(false, 0L) { msg_entry = msgEntries };
-            SyncProto syncProto = new SyncProto(TimeUtil.ConvertToUnixTime(DateTime.Now), msg);
+            SyncProto syncProto = new SyncProto();
+            syncProto.SyncMsg = msg;
 
-            string msgData = JsonUtil.Serialize(syncProto, false, false);
+            if (messageType == CollaborationMessageType.JSON)
+            {
+                string msgData = JsonUtil.Serialize(syncProto, false, false);
+                syncClient.SendMessage(msgData);
+            }
+            else if (messageType == CollaborationMessageType.ProtoBuf)
+            {
+                syncClient.SendMessage(syncProto.ToByteArray());
+            }
+            //Debug.Log("Send Sync: " + syncProto);
 
-#if UNITY_METRO && !UNITY_EDITOR
-            syncClient.SendMessage(msgData);
-#else
-            syncClient.SendMessage(msgData);
-#endif
+            return true;
+        }
+
+        public bool SendCommand(BroadcastMsg msg)
+        {
+            if (syncClient == null)
+                return false;
+
+            if (!syncClient.Running)
+                return false;
+
+            SyncProto syncProto = new SyncProto();
+            syncProto.BrdMsg = msg;
+
+            if (messageType == CollaborationMessageType.JSON)
+            {
+                string msgData = JsonUtil.Serialize(syncProto, false, false);
+                syncClient.SendMessage(msgData);
+            }
+            else if (messageType == CollaborationMessageType.ProtoBuf)
+            {
+                syncClient.SendMessage(syncProto.ToByteArray());
+            }
+
+            //Debug.Log("Send Command: " + syncProto);
+
+            return true;
         }
 
         /// <summary>
@@ -292,11 +415,22 @@ namespace DataMesh.AR.Network
                     {
                         byte[] messageBytes = syncClient.SyncQueue.Dequeue();
 
-                        string json = Encoding.UTF8.GetString(messageBytes);
-                        //Debug.Log(json);
+                        SyncProto proto = null;
 
-                        SyncProto proto = JsonUtil.Deserialize<SyncProto>(json);
-                        //Debug.Log("Msg[" + proto.msg_id + "]  objs:" + proto.sync_msg.msg_entry);
+                        if (messageType == CollaborationMessageType.JSON)
+                        {
+                            string json = Encoding.UTF8.GetString(messageBytes);
+                            //Debug.Log(json);
+
+                            proto = JsonUtil.Deserialize<SyncProto>(json);
+                            //Debug.Log("Msg[" + proto.msg_id + "]  objs:" + proto.sync_msg.msg_entry);
+                        }
+                        else
+                        {
+                            proto = SyncProto.Parser.ParseFrom(messageBytes);
+                        }
+
+                        //Debug.Log("[Receive] " + proto);
 
                         // 处理消息 
                         DealMessage(proto);

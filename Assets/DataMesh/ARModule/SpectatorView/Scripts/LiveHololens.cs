@@ -6,8 +6,14 @@ using MEHoloClient.Entities;
 using MEHoloClient.Sync;
 using MEHoloClient.Interface.Sync;
 using MEHoloClient.Utils;
+using MEHoloClient.UDP;
 using DataMesh.AR.Anchor;
 using System;
+
+#if  UNITY_METRO && !UNITY_EDITOR
+using System.Threading.Tasks;
+using System.Threading;
+#endif
 
 namespace DataMesh.AR.SpectatorView
 {
@@ -17,19 +23,23 @@ namespace DataMesh.AR.SpectatorView
         /// 识别版本号，只用于和Live通讯时使用 
         /// 连接上Live后会发这个版本号过去，Live会和本地的版本号对比 
         /// </summary>
-        public static short version = 2;
-
-        private SyncClient syncClient;
+        public static short version = 4;
 
         /// <summary>
         /// PC端的IP
         /// </summary>
-        public string bevIp;
+        public string liveIp;
 
         /// <summary>
         /// PC端的端口
         /// </summary>
-        public int bevPort;
+        public int livePort;
+
+
+        private SyncClient syncClient;
+
+
+#if  UNITY_METRO && !UNITY_EDITOR
 
         private string socketUrl;
 
@@ -37,6 +47,14 @@ namespace DataMesh.AR.SpectatorView
         private SceneAnchorController anchorController;
 
         private bool synchronizing = false;
+        private int syncIndex = 0;
+
+        private bool useUDP = true;
+        private int udpPort;
+        private UdpSender sender;
+
+        private Log.LogManager logManager;
+        private string currentLogName;
 
         /// <summary>
         /// 初始化
@@ -52,13 +70,18 @@ namespace DataMesh.AR.SpectatorView
         /// </summary>
         protected override void _TurnOn()
         {
-            socketUrl = "ws://" + bevIp + ":" + bevPort + LiveConstant.BevServerHandlerName;
+         
+            socketUrl = "ws://" + liveIp + ":" + livePort + MEHoloConstant.LiveServerHandlerName;
 
             syncClient = new SyncClient(socketUrl, true, 100);
             syncClient.StartClient();
 
             Debug.Log("start connect: " + socketUrl);
 
+            logManager = Log.LogManager.Instance;
+
+            // 关闭其他服务，以节省效能 
+            DataMesh.AR.Interactive.MultiInputManager.Instance.StopCapture();
         }
 
         protected override void _TurnOff()
@@ -66,9 +89,36 @@ namespace DataMesh.AR.SpectatorView
             
         }
 
+        private LiveMessageSynchronizeAll CreateSyncMessage()
+        {
+            LiveMessageSynchronizeAll msg = new LiveMessageSynchronizeAll();
+            msg.seq = syncIndex;
+            syncIndex++;
+            msg.position = mainCameraTransform.transform.position;
+            msg.rotation = mainCameraTransform.transform.rotation;
+
+            msg.anchorCount = anchorController.anchorObjectList.Count;
+            msg.anchorPositionList = new Vector3[msg.anchorCount];
+            msg.anchorRotationList = new Quaternion[msg.anchorCount];
+            msg.anchorIsLocated = new bool[msg.anchorCount];
+            for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+            {
+                AnchorObjectInfo info = anchorController.anchorObjectList[i];
+                msg.anchorPositionList[i] = info.rootObject.transform.position;
+                msg.anchorRotationList[i] = info.rootObject.transform.rotation;
+                if (info.anchor != null)
+                    msg.anchorIsLocated[i] = info.anchor.isLocated;
+                else
+                    msg.anchorIsLocated[i] = false;
+            }
+
+            return msg;
+        }
+         
         // Update is called once per frame
         void Update()
         {
+
             if (syncClient != null)
             {
                 if (syncClient.Running)
@@ -79,6 +129,7 @@ namespace DataMesh.AR.SpectatorView
 
                         // 处理消息 
                         LiveMessage msg = LiveMessageManager.ParseMessage(messageBytes);
+                        //Debug.Log("msg type=" + msg.type);
                         switch (msg.type)
                         {
                             case LiveMessageConstant.BEV_MESSAGE_TYPE_START:
@@ -92,6 +143,10 @@ namespace DataMesh.AR.SpectatorView
                                 // 这里也不能再同步了
                                 synchronizing = false;
                                 SetAnchors(msgSetAnchor);
+
+                                // 重置同步消息序号 
+                                syncIndex = 0;
+
                                 break;
                             case LiveMessageConstant.BEV_MESSAGE_TYPE_SAVE_ANCHOR:
                                 LiveMessageSaveAnchor msgSaveAnchor = msg as LiveMessageSaveAnchor;
@@ -102,54 +157,62 @@ namespace DataMesh.AR.SpectatorView
                             case LiveMessageConstant.BEV_MESSAGE_TYPE_DOWNLOAD_ANCHOR:
                                 DownloadAnchor();
                                 break;
+                            case LiveMessageConstant.BEV_MESSAGE_TYPE_REQUEST_SPATIAL_MAPPING:
+                                SendSpatialMapping();
+                                break;
                         }
                     }
 
-                    // 如果需要同步，则发送摄影机位置 
-                    // 不需要发送anchor位置，因为anchor位置只在修改时才需要发送 
-                    if (synchronizing)
-                    {
-                        LiveMessageSynchronizeAll msg = new LiveMessageSynchronizeAll();
-                        msg.position = mainCameraTransform.transform.position;
-                        msg.rotation = mainCameraTransform.transform.eulerAngles;
-
-                        msg.anchorCount = anchorController.anchorObjectList.Count;
-                        msg.anchorPositionList = new Vector3[msg.anchorCount];
-                        msg.anchorRotationList = new Vector3[msg.anchorCount];
-                        msg.anchorIsLocated = new bool[msg.anchorCount];
-                        for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
-                        {
-                            AnchorObjectInfo info = anchorController.anchorObjectList[i];
-                            msg.anchorPositionList[i] = info.rootObject.transform.position;
-                            msg.anchorRotationList[i] = info.rootObject.transform.eulerAngles;
-                            msg.anchorIsLocated[i] = info.anchor.isLocated;
-                        }
-
-
-                        byte[] msgData = msg.Serialize();
-
-                        /*
-                        string str = "send All sync! " + msg.position + "," + msg.rotation + "===";
-                        for (int i = 0;i < msg.anchorPositionList.Length;i ++)
-                        {
-                            str += msg.anchorPositionList[i].ToString() + ",";
-                            str += msg.anchorRotationList[i].ToString() + "||";
-                        }
-                        Debug.Log(str);
-
-                        str = "";
-                        for (int i = 0;i < msgData.Length;i ++)
-                        {
-                            str += msgData[i].ToString() + ",";
-                        }
-                        Debug.Log(str);
-                        */
-                        syncClient.SendMessage(msgData);
-                    }
 
                 }
             }
 
+        }
+
+        async void LateUpdate()
+        {
+            // 如果需要同步，则发送摄影机和所有Anchor位置 
+            if (synchronizing)
+            {
+                if (!useUDP)
+                {
+                    if (syncClient != null)
+                    {
+                        if (syncClient.Running)
+                        {
+                            LiveMessageSynchronizeAll msg = CreateSyncMessage();
+                            byte[] msgData = msg.Serialize();
+
+                            // 记录Log 
+                            logManager.Log(currentLogName, msg.FormatLogString());
+
+                            await syncClient.SendMessage(msgData);
+                        }
+                    }
+                }
+                else
+                {
+                    if (sender != null && sender.Running)
+                    {
+                        LiveMessageSynchronizeAll msg = CreateSyncMessage();
+                        byte[] msgData = msg.Serialize();
+
+                        // 记录Log 
+                        logManager.Log(currentLogName, msg.FormatLogString());
+
+                        try
+                        {
+                            //Debug.Log("msgData length = " + msgData.Length);
+                            await sender.Send(msgData);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Log("---->" + e);
+                        }
+
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -158,17 +221,25 @@ namespace DataMesh.AR.SpectatorView
         /// <param name="msgSetAnchor"></param>
         private void SetAnchors(LiveMessageSetAnchor msgSetAnchor)
         {
-            if (msgSetAnchor.anchorData.isInit)
+            //Debug.Log("Init Anchor!");
+            anchorController.ClearAllAnchorInfo(true);
+
+            anchorController.serverHost = msgSetAnchor.anchorData.serverHost;
+            anchorController.serverPort = msgSetAnchor.anchorData.serverPort;
+            anchorController.appId = msgSetAnchor.anchorData.appId;
+            anchorController.roomId = msgSetAnchor.anchorData.roomId;
+
+            this.useUDP = msgSetAnchor.anchorData.useUDP;
+            this.udpPort = msgSetAnchor.anchorData.serverPortUDP;
+
+
+            // 开始记录日志 
+            if (currentLogName != null)
             {
-                //Debug.Log("Init Anchor!");
-                anchorController.ClearAllAnchorInfo(true);
-
-                anchorController.serverHost = msgSetAnchor.anchorData.serverHost;
-                anchorController.serverPort = msgSetAnchor.anchorData.serverPort;
-                anchorController.appId = msgSetAnchor.anchorData.appId;
-                anchorController.roomId = msgSetAnchor.anchorData.roomId;
+                Debug.Log("Has Old Log! " + currentLogName);
+                logManager.StopLog(currentLogName);
             }
-
+            currentLogName = "SendSync_" + msgSetAnchor.anchorData.logIndex;
 
             for (int i = 0; i < msgSetAnchor.anchorData.anchorNameList.Count; i++)
             {
@@ -176,37 +247,30 @@ namespace DataMesh.AR.SpectatorView
                 Vector3 pos = msgSetAnchor.anchorData.anchorPosition[i].ToVector3();
                 Vector3 forward = msgSetAnchor.anchorData.anchorForward[i].ToVector3();
 
-                if (msgSetAnchor.anchorData.isInit)
-                {
-                    // 创建新anchor 
-                    GameObject obj = new GameObject(anchorName);
-                    obj.transform.position = pos;
+                // 创建新anchor 
+                GameObject obj = new GameObject(anchorName);
+                obj.transform.position = pos;
+                if (msgSetAnchor.anchorData.sendRotation)
+                    obj.transform.eulerAngles = forward;
+                else
                     obj.transform.forward = forward;
 
-                    //Debug.Log("Add Anchor[" + anchorName + "] at " + pos + " | " + forward);
+                //Debug.Log("Add Anchor[" + anchorName + "] at " + pos + " | " + forward);
 
-                    anchorController.AddAnchorObject(anchorName, obj);
-                }
-                else
-                {
-                    // 修改原有anchor
-                    AnchorObjectInfo info = anchorController.GetAnchorInfo(anchorName);
-                    if (info != null)
-                    {
-                        anchorController.RemoveAnchor(info);
-
-                        info.rootObject.transform.position = pos;
-                        info.rootObject.transform.forward = forward;
-                        //info.mark.followRoot = true;
-                        //info.FollowRootObject();
-
-                        anchorController.CreateAnchor(info);
-                    }
-                    anchorController.SaveAllSceneRootAnchor();
-                }
+                anchorController.AddAnchorObject(anchorName, obj);
             }
 
             anchorController.ShowAllMark(false);
+
+            if (useUDP)
+            {
+                if (sender != null)
+                    sender.Dispose();
+
+                sender = new UdpSender(udpPort, UdpMode.Unicast, liveIp, null);
+                sender.Init();
+
+            }
 
             // 设置完毕之后，回传结果给PC 
             SendSetAnchorResult();
@@ -235,6 +299,7 @@ namespace DataMesh.AR.SpectatorView
         /// <param name="msgSetAnchor"></param>
         private void SaveAnchors(LiveMessageSaveAnchor msgSetAnchor)
         {
+            Debug.Log("Save Anchor! rotate=" + msgSetAnchor.anchorData.sendRotation);
             waitToSave = new List<AnchorObjectInfo>();
             for (int i = 0; i < msgSetAnchor.anchorData.anchorNameList.Count; i++)
             {
@@ -249,7 +314,10 @@ namespace DataMesh.AR.SpectatorView
                     anchorController.RemoveAnchor(info);
 
                     info.rootObject.transform.position = pos;
-                    info.rootObject.transform.forward = forward;
+                    if (msgSetAnchor.anchorData.sendRotation)
+                        info.rootObject.transform.eulerAngles = forward;
+                    else
+                        info.rootObject.transform.forward = forward;
                     //info.mark.followRoot = true;
                     //info.FollowRootObject();
 
@@ -301,7 +369,7 @@ namespace DataMesh.AR.SpectatorView
                 }
             }
 
-            if (succ)
+            if (succ && waitToSave != null)
             {
                 for (int i = 0; i < waitToSave.Count; i++)
                 {
@@ -309,6 +377,7 @@ namespace DataMesh.AR.SpectatorView
                     {
                         succ = false;
                         error = "Save Anchor Failed!";
+                        break;
                     }
 
                 }
@@ -367,5 +436,38 @@ namespace DataMesh.AR.SpectatorView
                 }
             }
         }
+
+        public void SendSpatialMapping()
+        {
+            List<MeshFilter> meshes = SpatialMappingManager.Instance.GetMeshFilters();
+            byte[] meshData = SimpleMeshSerializer.Serialize(meshes);
+
+            //SpatialMappingManager.Instance.DrawVisualMeshes = true;
+
+            LiveMessageResponseSpatialMapping msg = new LiveMessageResponseSpatialMapping();
+            msg.mapData = meshData;
+
+            Debug.Log("Spatial Mapping bytes len=" + meshData.Length);
+            Debug.Log("Send Spatial Mapping!");
+
+            syncClient.SendMessage(msg.Serialize());
+
+        }
+#else
+        // 只实现空方法 
+        protected override void _Init()
+        {
+        }
+
+        // 只实现空方法 
+        protected override void _TurnOn()
+        {
+        }
+
+        // 只实现空方法 
+        protected override void _TurnOff()
+        {
+        }
+#endif
     }
 }

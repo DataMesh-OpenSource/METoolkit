@@ -4,338 +4,339 @@ using UnityEngine;
 using UnityEngine.UI;
 using DataMesh.AR.Interactive;
 
-public class CursorController : DataMesh.AR.MEHoloModuleSingleton<CursorController>
+namespace DataMesh.AR.UI
 {
-    public Transform CurserRoot;
-    public Transform InfoRoot;
 
-    public GameObject cursorNormal;
-    public GameObject cursorRemove;
-    public GameObject cursorHand;
-    public GameObject cursorLoading;
-    public GameObject cursorEye;
-
-    public GameObject cursorRecording;
-    public GameObject cursorSnap;
-    public GameObject infoPrefab;
-
-    public GameObject moveAxis;
-    public GameObject moveAxisX;
-    public GameObject moveAxisY;
-    public GameObject moveAxisZ;
-
-    public GameObject cursorRotateScene;
-
-    public Text timeText;
-
-    //public GameObject infoTextPrefab;
-
-    private float recordTimeRemain;
-    private bool recordCountingDown = false;
-
-    public TweenUGUIAlpha tw3;
-    public TweenUGUIAlpha tw2;
-    public TweenUGUIAlpha tw1;
-
-    public System.Action cbSnapCountDown;
-
-
-    private MultiInputManager gm;
-
-    private Transform mainCameraTrans;
-
-    private bool isTurnOn = false;
-
-    /// <summary>
-    /// 设置游标为忙状态 
-    /// </summary>
-    [HideInInspector]
-    public bool isBusy = false;
-
-    ///////////////////以下是鼠标相关////////////////
-    public float DistanceFromCollision;
-
-    protected override void Awake()
+    public class CursorController : MonoBehaviour
     {
-        base.Awake();
+        public Transform CursorRoot;
+        public Transform InfoRoot;
 
-        if (cursorNormal != null)
-            cursorNormal.SetActive(false);
-        if (cursorRemove != null)
-            cursorRemove.SetActive(false);
-        if (cursorHand != null)
-            cursorHand.SetActive(false);
-        if (cursorLoading != null)
-            cursorLoading.SetActive(false);
-        if (cursorEye != null)
-            cursorEye.SetActive(false);
+        public GameObject cursorNormalPrefab;
+        public GameObject cursorTapPrefab;
+        public GameObject cursorLoadingPrefab;
+        public GameObject cursorInfoPrefab;
+        public GameObject infoPrefab;
 
-        cursorRecording.SetActive(false);
-        cursorSnap.SetActive(false);
-        tw3.gameObject.SetActive(false);
-        tw2.gameObject.SetActive(false);
-        tw1.gameObject.SetActive(false);
+        public bool cursorFaceToCamera = false;
 
-        moveAxis.SetActive(false);
+        [HideInInspector]
+        public GameObject cursorNormal;
+        [HideInInspector]
+        public GameObject cursorTap;
+        [HideInInspector]
+        public GameObject cursorLoading;
+        [HideInInspector]
+        public GameObject cursorInfo;
 
-        cursorRotateScene.SetActive(false);
-    }
-
-    protected override void _Init()
-    {
-        gm = MultiInputManager.Instance;
-
-        mainCameraTrans = Camera.main.transform;
-
-    }
+        /// <summary>
+        /// 设置过滤层，检查当前视线碰撞物体，如果不在layerMask之中，则显示Normal，否则显示Hand 
+        /// </summary>
+        public LayerMask layerMask = int.MaxValue;
 
 
-    protected override void _TurnOn()
-    {
-        CurserRoot.gameObject.SetActive(true);
-        InfoRoot.gameObject.SetActive(true);
+        private MultiInputManager gm;
+        private bool isTurnOn = false;
 
-        isTurnOn = true;
-    }
+        /// <summary>
+        /// 设置游标为忙状态 
+        /// </summary>
+        [HideInInspector]
+        public bool isBusy = false;
 
-    protected override void _TurnOff()
-    {
-        CurserRoot.gameObject.SetActive(false);
-        InfoRoot.gameObject.SetActive(false);
+        private bool isShowInfoCursor = false;
 
-        isTurnOn = false;
-    }
+        ///////////////////以下是鼠标相关////////////////
+        public float DistanceFromCollision;
 
-    void Update()
-    {
 
-        if (!isTurnOn)
-            return;
-
-        if (recordCountingDown)
+        public void Init()
         {
-            recordTimeRemain -= Time.deltaTime;
-            //Debug.Log("dt=" + Time.deltaTime);
-            if (recordTimeRemain <= 0)
+            gm = MultiInputManager.Instance;
+
+            if (cursorNormal != null)
+                cursorNormal.SetActive(false);
+            if (cursorTap != null)
+                cursorTap.SetActive(false);
+            if (cursorLoading != null)
+                cursorLoading.SetActive(false);
+
+            RefreshAll();
+        }
+
+
+        public void TurnOn()
+        {
+            CursorRoot.gameObject.SetActive(true);
+            InfoRoot.gameObject.SetActive(true);
+
+            isTurnOn = true;
+        }
+
+        public void TurnOff()
+        {
+            CursorRoot.gameObject.SetActive(false);
+            InfoRoot.gameObject.SetActive(false);
+
+            isTurnOn = false;
+        }
+
+        public void RefreshAll()
+        {
+            RefreshNormal();
+            RefreshBusy();
+            RefreshTap();
+            RefreshInfo();
+        }
+
+        public void RefreshNormal()
+        {
+            if (cursorNormal != null)
             {
-                recordTimeRemain = 0;
-                recordCountingDown = false;
+                Destroy(cursorNormal);
             }
 
-            timeText.text = recordTimeRemain.ToString("0.00");
-
-        }
-    }
-
-    void LateUpdate()
-    {
-        if (!isTurnOn)
-        {
-            //Debug.Log("!IsturnOn");
-            return;
-        }
-
-
-
-        if (mainCameraTrans == null)
-        {
-            Debug.Log("mainCameraTrans == null");
-            return;
+            if (cursorNormalPrefab != null)
+            {
+                cursorNormal = GameObject.Instantiate(cursorNormalPrefab);
+                cursorNormal.transform.SetParent(CursorRoot);
+                cursorNormal.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                cursorNormal = null;
+            }
         }
 
-        
-        // 忙的时候，只有转圈
-        if (isBusy)
+        public void RefreshBusy()
         {
-            cursorLoading.SetActive(true);
-            cursorNormal.SetActive(false);
-            cursorHand.SetActive(false);
-            cursorRemove.SetActive(false);
-            cursorEye.SetActive(false);
-        }
-        else
-        {
-           
-            cursorLoading.SetActive(false);
-            cursorEye.SetActive(false);
+            if (cursorLoading != null)
+            {
+                Destroy(cursorLoading);
+            }
 
-            // 根据主状态显示光标
+            if (cursorLoadingPrefab != null)
+            {
+                cursorLoading = GameObject.Instantiate(cursorLoadingPrefab);
+                cursorLoading.transform.SetParent(CursorRoot);
+                cursorLoading.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                cursorLoading = null;
+            }
+        }
+
+        public void RefreshTap()
+        {
+            if (cursorTap != null)
+            {
+                Destroy(cursorTap);
+            }
+
+            if (cursorTapPrefab != null)
+            {
+                cursorTap = GameObject.Instantiate(cursorTapPrefab);
+                cursorTap.transform.SetParent(CursorRoot);
+                cursorTap.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                cursorTap = null;
+            }
+        }
+
+        public void RefreshInfo()
+        {
+            if (cursorInfo != null)
+            {
+                Destroy(cursorInfo);
+            }
+
+            if (cursorInfoPrefab != null)
+            {
+                cursorInfo = GameObject.Instantiate(cursorInfoPrefab);
+                cursorInfo.transform.SetParent(InfoRoot);
+                cursorInfo.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                cursorInfo = null;
+            }
+        }
+
+        public void SetCursorNormal(GameObject newCursor)
+        {
+            if (cursorNormal != null)
+            {
+                Destroy(cursorNormal);
+            }
+
+            cursorNormal = newCursor;
+            cursorNormal.transform.SetParent(CursorRoot);
+            cursorNormal.transform.localPosition = Vector3.zero;
+        }
+        public void SetCursorTap(GameObject newCursor)
+        {
+            if (cursorTap != null)
+            {
+                Destroy(cursorTap);
+            }
+
+            cursorTap = newCursor;
+            cursorTap.transform.SetParent(CursorRoot);
+            cursorTap.transform.localPosition = Vector3.zero;
+        }
+        public void SetCursorLoading(GameObject newCursor)
+        {
+            if (cursorLoading != null)
+            {
+                Destroy(cursorLoading);
+            }
+
+            cursorLoading = newCursor;
+            cursorLoading.transform.SetParent(CursorRoot);
+            cursorLoading.transform.localPosition = Vector3.zero;
+
+        }
+        public void SetCursorInfo(GameObject newCursor)
+        {
+            if (cursorInfo != null)
+            {
+                Destroy(cursorInfo);
+            }
+
+            cursorInfo = newCursor;
+            cursorInfo.transform.SetParent(InfoRoot);
+            cursorInfo.transform.localPosition = Vector3.zero;
+        }
+
+        private void SetActive(GameObject obj, bool b)
+        {
+            if (obj != null)
+                obj.SetActive(b);
+        }
+
+        void Update()
+        {
+            if (!isTurnOn)
+            {
+                //Debug.Log("!IsturnOn");
+                return;
+            }
+
+            if (isShowInfoCursor)
+            {
+                SetActive(cursorLoading,false);
+                SetActive(cursorNormal,false);
+                SetActive(cursorTap,false);
+
+                SetActive(cursorInfo,true);
+            }
+            else
+            {
+                SetActive(cursorInfo,false);
+                // 忙的时候，只有转圈
+                if (isBusy)
+                {
+                    SetActive(cursorLoading,true);
+                    SetActive(cursorNormal,false);
+                    SetActive(cursorTap,false);
+                }
+                else
+                {
+
+                    SetActive(cursorLoading,false);
+
+                    bool focus = false;
+                    if (gm.FocusedObject != null)
+                    {
+                        if ((layerMask & (1 << gm.FocusedObject.layer)) > 0)
+                        {
+                            focus = true;
+                        }
+                    }
+
+                    // 根据主状态显示光标
+                    if (focus)
+                    {
+                        SetActive(cursorNormal,false);
+                        SetActive(cursorTap,true);
+                    }
+                    else
+                    {
+
+                        SetActive(cursorNormal,true);
+                        SetActive(cursorTap,false);
+                    }
+
+                }
+            }
+
+
+            Vector3 cp;
+            Vector3 cn;
+            Vector3 cf;
+
+            float dis = 5;
+
+            // 因为layerMask不同，需要独立计算碰撞 
+
+            // 计算游标位置和方向，多数需要依赖于碰撞物体的位置 
             if (gm.FocusedObject != null)
             {
-                cursorNormal.SetActive(false);
-                cursorHand.SetActive(true);
+                cp = gm.hitPoint;
+                cn = gm.hitNormal;
+                if (cursorFaceToCamera)
+                    cf = gm.gazeDirection;
+                else
+                    cf = -gm.hitNormal;
             }
             else
             {
-               
-                cursorNormal.SetActive(true);
-                cursorHand.SetActive(false);
+                cp = gm.headPosition + gm.gazeDirection * dis;
+                cn = -gm.gazeDirection;
+                cf = gm.gazeDirection;
             }
 
+            CursorRoot.position = cp + cn * DistanceFromCollision;
+            CursorRoot.forward = cf;
+
+            // 计算提示图标的位置和方向，通常与碰撞物体无关，固定距离 
+            InfoRoot.position = gm.headPosition + gm.gazeDirection * 2;
+            InfoRoot.forward = gm.gazeDirection;
         }
 
-       
 
-        Vector3 cp;
-        Vector3 cn;
-        Vector3 cf;
-
-        float dis = 5;
-
-        // 计算游标位置和方向，多数需要依赖于碰撞物体的位置 
-        if (gm.FocusedObject != null)
+        public void ShowInfoCursor()
         {
-            cp = gm.hitPoint;
-            cn = gm.hitNormal;
-            if (cursorNormal.activeSelf)
-                cf = gm.hitNormal;
-            else
-                cf = gm.gazeDirection;
+            if (cursorInfo != null)
+                isShowInfoCursor = true;
         }
-        else
+
+        public void HideInfoCursor()
         {
-            cp = gm.headPosition + gm.gazeDirection * dis;
-            cn = -gm.gazeDirection;
-            cf = gm.gazeDirection;
+            isShowInfoCursor = false;
         }
 
-        CurserRoot.position = cp + cn * DistanceFromCollision;
-        CurserRoot.forward = cf;
-
-        // 计算提示图标的位置和方向，通常与碰撞物体无关，固定距离 
-        InfoRoot.position = gm.headPosition + gm.gazeDirection * 2;
-        InfoRoot.forward = gm.gazeDirection;
-
-        moveAxis.transform.rotation = Quaternion.identity;
-    }
 
 
-
-    public void StartCountdown(float n)
-    {
-        recordTimeRemain = n;
-        recordCountingDown = true;
-
-        cursorRecording.SetActive(true);
-    }
-
-    public void StopCountdown()
-    {
-        cursorRecording.SetActive(false);
-    }
-
-
-    public void ShowSnapCountDown(System.Action cb)
-    {
-        // 上一个倒计时还没走完，不再重新走 
-        if (cbSnapCountDown != null)
-            return;
-
-        cursorSnap.SetActive(true);
-        cbSnapCountDown = cb;
-
-        tw3.gameObject.SetActive(true);
-        tw3.ResetToBeginning();
-        tw3.AddFinishAction(ShowSpanCountDown3, true);
-        tw3.Play(true);
-    }
-
-    private void ShowSpanCountDown3()
-    {
-        tw3.gameObject.SetActive(false);
-
-        tw2.gameObject.SetActive(true);
-        tw2.ResetToBeginning();
-        tw2.AddFinishAction(ShowSpanCountDown2, true);
-        tw2.Play(true);
-
-    }
-
-    private void ShowSpanCountDown2()
-    {
-        tw2.gameObject.SetActive(false);
-
-        tw1.gameObject.SetActive(true);
-        tw1.ResetToBeginning();
-        tw1.AddFinishAction(ShowSpanCountDown1, true);
-        tw1.Play(true);
-
-    }
-
-    private void ShowSpanCountDown1()
-    {
-        tw1.gameObject.SetActive(false);
-        cursorSnap.SetActive(false);
-
-        if (cbSnapCountDown != null)
+        public void ShowInfo(string s)
         {
-            cbSnapCountDown();
-            cbSnapCountDown = null;
+            GameObject obj = PrefabUtils.CreateGameObjectToParent(InfoRoot.gameObject, infoPrefab);
+            obj.SetActive(true);
+            InfoText info = obj.GetComponent<InfoText>();
+            info.SetText(s);
+
         }
-    }
 
-    public void ShowInfo(string s)
-    {
-        GameObject obj = PrefabUtils.CreateGameObjectToParent(InfoRoot.gameObject, infoPrefab);
-        obj.SetActive(true);
-        InfoText info = obj.GetComponent<InfoText>();
-        info.SetText(s);
-        
-    }
-
-    public void HideError()
-    {
-        infoPrefab.SetActive(false);
-    }
-
-
-
-
-    public void StartRecoding()
-    {
-        StartCountdown(3);
-
-    }
-
-    public void StopRecording()
-    {
-        StopCountdown();
-    }
-
-    public void ShowMoveAxis(Vector3 dir)
-    {
-        moveAxis.SetActive(true);
-
-        moveAxisX.SetActive(false);
-        moveAxisY.SetActive(false);
-        moveAxisZ.SetActive(false);
-        if (dir.x != 0)
+        public void HideError()
         {
-            moveAxisX.SetActive(true);
+            infoPrefab.SetActive(false);
         }
-        if (dir.y != 0)
-        {
-            moveAxisY.SetActive(true);
-        }
-        if (dir.z != 0)
-        {
-            moveAxisZ.SetActive(true);
-        }
-    }
 
-    public void HideMoveAxis()
-    {
-        moveAxis.SetActive(false);
-    }
 
-    public void ShowRotateScene()
-    {
-        cursorRotateScene.SetActive(true);
-    }
 
-    public void HideRotateScene()
-    {
-        cursorRotateScene.SetActive(false);
     }
 
 }

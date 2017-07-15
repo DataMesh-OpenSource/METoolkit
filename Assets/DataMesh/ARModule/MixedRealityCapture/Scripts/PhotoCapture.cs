@@ -26,16 +26,23 @@ namespace DataMesh.AR.MRC {
         {
             filePath = System.IO.Path.Combine(Application.persistentDataPath, filename);
 #if UNITY_METRO && !UNITY_EDITOR
-            Resolution cameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-            width = cameraResolution.width;
-            height = cameraResolution.height;
-            targetTexture = new Texture2D(width, height);
-            //TakeAPicture();
-            cameraParameters = new CameraParameters();
-            cameraParameters.hologramOpacity = 1.0f;
-            cameraParameters.cameraResolutionWidth = width;
-            cameraParameters.cameraResolutionHeight = height;
-            cameraParameters.pixelFormat = CapturePixelFormat.BGRA32;
+            try
+            {
+                Resolution cameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
+                width = cameraResolution.width;
+                height = cameraResolution.height;
+                targetTexture = new Texture2D(width, height);
+                //TakeAPicture();
+                cameraParameters = new CameraParameters();
+                cameraParameters.hologramOpacity = 1.0f;
+                cameraParameters.cameraResolutionWidth = width;
+                cameraParameters.cameraResolutionHeight = height;
+                cameraParameters.pixelFormat = CapturePixelFormat.BGRA32;
+            }
+            catch (System.Exception e)
+            {
+
+            }
 #endif
         }
         public void TakeAPicture()

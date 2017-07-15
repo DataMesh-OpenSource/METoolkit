@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: a7d5314a8b5452f46bdafb3fec5a4c6d
-timeCreated: 1492072835
+guid: 98a34b4d3b3263144a2c5807124eb5a1
+timeCreated: 1498123135
 licenseType: Free
 PluginImporter:
   serializedVersion: 1
@@ -9,10 +9,13 @@ PluginImporter:
   isPreloaded: 0
   isOverridable: 0
   platformData:
+    Android:
+      enabled: 1
+      settings: {}
     Any:
       enabled: 0
       settings:
-        Exclude Android: 1
+        Exclude Android: 0
         Exclude Editor: 0
         Exclude Linux: 0
         Exclude Linux64: 0
@@ -20,7 +23,7 @@ PluginImporter:
         Exclude OSXIntel: 0
         Exclude OSXIntel64: 0
         Exclude OSXUniversal: 0
-        Exclude WebGL: 1
+        Exclude WebGL: 0
         Exclude Win: 0
         Exclude Win64: 0
         Exclude WindowsStoreApps: 1
@@ -31,36 +34,31 @@ PluginImporter:
         DefaultValueInitialized: true
     Linux:
       enabled: 1
-      settings:
-        CPU: x86
+      settings: {}
     Linux64:
       enabled: 1
-      settings:
-        CPU: x86_64
+      settings: {}
     LinuxUniversal:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
     OSXIntel:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
     OSXIntel64:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
     OSXUniversal:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
+    WebGL:
+      enabled: 1
+      settings: {}
     Win:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
     Win64:
       enabled: 1
-      settings:
-        CPU: AnyCPU
+      settings: {}
     WindowsStoreApps:
       enabled: 0
       settings:

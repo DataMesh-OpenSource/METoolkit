@@ -3,6 +3,7 @@ using UnityEngine;
 using DataMesh.AR.Network;
 using DataMesh.AR;
 using MEHoloClient.Entities;
+using MEHoloClient.Proto;
 
 public class GettingStartedSample : MonoBehaviour, IMessageHandler
 {
@@ -23,64 +24,67 @@ public class GettingStartedSample : MonoBehaviour, IMessageHandler
         }
 
         collaborationManager = CollaborationManager.Instance;
-        collaborationManager.appId = 9999;
-        collaborationManager.roomId = "Room1";
-        collaborationManager.serverHost = "192.168.2.50";
 
         collaborationManager.AddMessageHandler(this);
 
-        SceneObjects roomInitData = new SceneObjects();
-        ShowObject obj = new ShowObject(
-                    "Test", 
-                    true,
-                    GetTransformFloat(cube.transform), 
-                    null
-                    );
-        roomInitData.ShowObjectDic.Add(obj.show_id, obj);
-        collaborationManager.roomInitData = roomInitData;
+        MsgEntry entry = new MsgEntry();
+        entry.ShowId = "Test";
+        GetTransformFloat(cube.transform, entry);
+
+        ShowObject showObject = new ShowObject(entry);
+        SceneObject roomData = new SceneObject();
+        roomData.ShowObjectDic.Add(showObject.ShowId, showObject);
+
+        collaborationManager.roomInitData = roomData;
 
         collaborationManager.TurnOn();
     }
 
-    private float[] GetTransformFloat(Transform trans)
+    private void GetTransformFloat(Transform trans, MsgEntry entry)
     {
+        entry.Pr.Clear();
+
         float[] rs = new float[6];
-        rs[0] = trans.position.x;
-        rs[1] = trans.position.y;
-        rs[2] = trans.position.z;
-        rs[3] = trans.eulerAngles.x;
-        rs[4] = trans.eulerAngles.y;
-        rs[5] = trans.eulerAngles.z;
-        return rs;
+        entry.Pr.Add(trans.position.x);
+        entry.Pr.Add(trans.position.y);
+        entry.Pr.Add(trans.position.z);
+        entry.Pr.Add(trans.eulerAngles.x);
+        entry.Pr.Add(trans.eulerAngles.y);
+        entry.Pr.Add(trans.eulerAngles.z);
     }
 
     public void DealMessage(SyncProto proto)
     {
-        MsgEntry[] messages = proto.sync_msg.msg_entry;
+        Google.Protobuf.Collections.RepeatedField<MsgEntry> messages = proto.SyncMsg.MsgEntry;
         if (messages == null)
             return;
 
-        for (int i = 0; i < messages.Length; i++)
+        for (int i = 0; i < messages.Count; i++)
         {
             MsgEntry msg = messages[i];
-            cube.transform.position = new Vector3(msg.pr[0], msg.pr[1], msg.pr[2]);
-            cube.transform.eulerAngles = new Vector3(msg.pr[3], msg.pr[4], msg.pr[5]);
+            cube.transform.position = new Vector3(msg.Pr[0], msg.Pr[1], msg.Pr[2]);
+            cube.transform.eulerAngles = new Vector3(msg.Pr[3], msg.Pr[4], msg.Pr[5]);
+
+            Debug.Log("Receive Message! " + msg.Pr);
         }
     }
 
     void Update()
     {
-        if (collaborationManager != null && collaborationManager.hasEnterRoom)
+        if (collaborationManager != null)
         {
-            MsgEntry entry = new MsgEntry(
-                    OP_TYPE.UPD,
-                    "Test", 
-                    true, 
-                    GetTransformFloat(cube.transform), 
-                    null, 
-                    null
-                    );
-            collaborationManager.SendMessage(new MsgEntry[1] { entry });
+            if (collaborationManager.enterRoomResult == EnterRoomResult.EnterRoomSuccess)
+            {
+                MsgEntry entry = new MsgEntry();
+                entry.OpType = MsgEntry.Types.OP_TYPE.Upd;
+                entry.ShowId = "Test";
+                GetTransformFloat(cube.transform, entry);
+
+                SyncMsg msg = new SyncMsg();
+                msg.MsgEntry.Add(entry);
+
+                collaborationManager.SendMessage(msg);
+            }
         }
     }
 

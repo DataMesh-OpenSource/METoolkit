@@ -7,8 +7,12 @@ using DataMesh.AR;
 [CustomEditor(typeof(MEHoloEntrance))]
 public class MEHoloEntranceEditor : Editor
 {
+    private string newId;
+
     private void InstantiatePrefabToParent(GameObject prefab, Transform root)
     {
+        if (prefab == null)
+            return;
         GameObject obj;
         obj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         obj.transform.SetParent(root);
@@ -37,9 +41,9 @@ public class MEHoloEntranceEditor : Editor
                 InstantiatePrefabToParent(entrance.AnchorPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.InputPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.SpeechPrefab, holoRoot.transform);
-                InstantiatePrefabToParent(entrance.MenuPrefab, holoRoot.transform);
-                InstantiatePrefabToParent(entrance.CursorPrefab, holoRoot.transform);
+                InstantiatePrefabToParent(entrance.UIPerfab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.CollaborationPrefab, holoRoot.transform);
+                InstantiatePrefabToParent(entrance.StoragePrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.SocialPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.LivePrefab, holoRoot.transform);
 
@@ -50,6 +54,49 @@ public class MEHoloEntranceEditor : Editor
 
         GUI.changed = false;
 
+        GUIStyle nameStyle = new GUIStyle(GUI.skin.box);
+        nameStyle.fontSize = 20;
+        nameStyle.padding = new RectOffset(10, 10, 10, 10);
+        nameStyle.margin = new RectOffset(10, 10, 10, 10);
+
+        string showName = null;
+        bool needInput = false;
+        if (string.IsNullOrEmpty(entrance.AppID))
+        {
+            showName = "Please Set App ID";
+            nameStyle.normal.textColor = new Color(0.7f, 0f, 0f);
+            needInput = true;
+        }
+        else
+        {
+            showName = "App ID: " + entrance.AppID;
+            nameStyle.normal.textColor = new Color(0f, 0.7f, 0f);
+            needInput = false;
+        }
+
+        GUILayout.Box(showName, nameStyle);
+        if (needInput)
+        {
+            newId = EditorGUILayout.TextField("App ID:", newId);
+            if (GUILayout.Button("Set App ID"))
+            {
+                entrance.AppID = newId;
+            }
+        }
+        else
+        {
+            if (GUILayout.Button("Remove this id"))
+            {
+                if (EditorUtility.DisplayDialog("Confirm", "Do you want to delete this id?", "Confirm", "Cancel"))
+                {
+                    entrance.AppID = null;
+                }
+            }
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.Space();
+
 
         entrance.NeedAnchor = EditorGUILayout.Toggle("If Need Anchor:", entrance.NeedAnchor);
         if (entrance.NeedAnchor)
@@ -57,9 +104,9 @@ public class MEHoloEntranceEditor : Editor
             entrance.NeedInput = true;
         }
         entrance.NeedInput = EditorGUILayout.Toggle("If Need Input:", entrance.NeedInput);
-        entrance.NeedCursor = EditorGUILayout.Toggle("If Need Cursor:", entrance.NeedCursor);
+        entrance.NeedUI = EditorGUILayout.Toggle("If Need UI:", entrance.NeedUI);
         entrance.NeedCollaboration = EditorGUILayout.Toggle("If Need Collaboration:", entrance.NeedCollaboration);
-        entrance.NeedMenu = EditorGUILayout.Toggle("If Need Menu:", entrance.NeedMenu);
+        entrance.NeedStorage = EditorGUILayout.Toggle("If Need Storage:", entrance.NeedStorage);
         entrance.NeedSpeech = EditorGUILayout.Toggle("If Need Speech:", entrance.NeedSpeech);
         entrance.NeedSocial = EditorGUILayout.Toggle("If Need Social:", entrance.NeedSocial);
 
@@ -73,6 +120,7 @@ public class MEHoloEntranceEditor : Editor
         if (GUI.changed)
         {
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+            EditorUtility.SetDirty(entrance);
         }
 
     }

@@ -20,8 +20,15 @@ namespace DataMesh.AR.Anchor
         None,
         Fitting,
         Move,
-        Rotate,
-        Readjust
+        Rotate
+    }
+
+    public enum AnchorObjectStatus
+    {
+        StoreNotReady,
+        HasNotSet,
+        Saved,
+        NoAnchorObject
     }
 
     public class AnchorObjectInfo
@@ -36,6 +43,8 @@ namespace DataMesh.AR.Anchor
         public bool needSave = false;
         public bool saveSucc = true;
 
+        public AnchorObjectStatus status = AnchorObjectStatus.HasNotSet;
+
         /*
         public void FollowRootObject()
         {
@@ -48,18 +57,68 @@ namespace DataMesh.AR.Anchor
         {
             rootObject.transform.position = mark.transform.position - mark.offset;
             rootObject.transform.rotation = mark.transform.rotation;
+
+            CheckLockRotation();
         }
 
-        public void SetTransform(ref Vector3 pos, ref Vector3 up)
+        public void CheckLockRotation()
+        {
+            /*
+            Vector3 eular = rootObject.transform.eulerAngles;
+            if (definition.lockX == AnchorDefinition.LockType.FollowCoordinate)
+            {
+                eular.x = 0;
+            }
+            else if (definition.lockX == AnchorDefinition.LockType.Lock)
+            {
+                eular.x = definition.originEular.x;
+            }
+
+            if (definition.lockY == AnchorDefinition.LockType.FollowCoordinate)
+            {
+                eular.y = 0;
+            }
+            else if (definition.lockY == AnchorDefinition.LockType.Lock)
+            {
+                eular.y = definition.originEular.y;
+            }
+
+            if (definition.lockZ == AnchorDefinition.LockType.FollowCoordinate)
+            {
+                eular.z = 0;
+            }
+            else if (definition.lockZ == AnchorDefinition.LockType.Lock)
+            {
+                eular.z = definition.originEular.z;
+            }
+
+            rootObject.transform.eulerAngles = eular;
+            */
+        }
+
+        public void SetTransform(Vector3 pos,Vector3 up)
         {
             //mark.transform.position = pos;
             rootObject.transform.position = pos;
             //mark.transform.up = up;
             rootObject.transform.up = up;
+            CheckLockRotation();
         }
-        public void SetTransform(ref Vector3 pos)
+        public void SetPosition(Vector3 pos)
         {
             rootObject.transform.position = pos;
+            CheckLockRotation();
+        }
+        public void SetEular(Vector3 eular)
+        {
+            rootObject.transform.eulerAngles = eular;
+            CheckLockRotation();
+        }
+        public void Rotate(Vector3 rotate, Space space)
+        {
+            //rootObject.transform.localEulerAngles += rotate;
+            rootObject.transform.Rotate(rotate, space);
+            CheckLockRotation();
         }
 
         public void Clear()
@@ -91,26 +150,62 @@ namespace DataMesh.AR.Anchor
 
         public GameObject markPrefab;
 
-        public int appId = 1;
+        /// <summary>
+        /// 因为SpectatorView中可能不止要处理一个app的信息，所以这里需要存储appID，不能直接使用MEHoloEntrance.AppName 
+        /// </summary>
+        [HideInInspector]
+        public string appId = "";
 
-        public string roomId = "MyRoom";
+        [HideInInspector]
+        public string roomId = "";
 
+        [HideInInspector]
         public string serverHost = "127.0.0.1";
 
-        public int serverPort = 8823;
+        [HideInInspector]
+        public int serverPort = 80;
 
 
         [HideInInspector]
         public SpatialAdjustType spatialAdjustType = SpatialAdjustType.None;
 
         /// <summary>
+        /// 获得当时所有Anchor状态的综述 
+        /// 如果是HasNotSet状态，应当提示使用者先设置Anchor
+        /// </summary>
+        public AnchorObjectStatus anchorStatusSummary
+        {
+            get
+            {
+                if (anchorStore == null)
+                    return AnchorObjectStatus.StoreNotReady;
+                if (anchorObjectList.Count == 0)
+                    return AnchorObjectStatus.NoAnchorObject;
+
+                AnchorObjectStatus rs = AnchorObjectStatus.Saved;
+                for (int i = 0;i < anchorObjectList.Count;i ++)
+                {
+                    if (anchorObjectList[i].status == AnchorObjectStatus.HasNotSet)
+                    {
+                        rs = AnchorObjectStatus.HasNotSet;
+                        break;
+                    }
+                }
+                return rs;
+            }
+        }
+
+        /// <summary>
         /// 对anchor操作全部完成后触发的回调，以便通知使用者，操作已经完成
         /// </summary>
         [HideInInspector]
-        public System.Action cbAnchorControlFinish;
+        private System.Action cbAnchorControlFinish;
+        public void AddCallbackFinish(System.Action cb) { cbAnchorControlFinish += cb; }
+        public void RemoveCallbackFinish(System.Action cb) { cbAnchorControlFinish -= cb; }
 
         protected WorldAnchorStore anchorStore;
         protected SpatialMappingManager spatialMappingManager;
+        protected MeshSurfaceObserver meshObserver;
 
         protected MultiInputManager inputManager;
         protected AnchorShared anchorShared;
@@ -180,10 +275,20 @@ namespace DataMesh.AR.Anchor
         /// </summary>
         protected override void _Init()
         {
+            appId = MEHoloEntrance.Instance.AppID;
+            roomId = Network.RoomManager.Instance.GetCurrentRoom();
+
+            Utility.AppConfig config = Utility.AppConfig.Instance;
+            config.LoadConfig(MEHoloConstant.NetworkConfigFile);
+            serverHost = Utility.AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
+
             spatialMappingManager = SpatialMappingManager.Instance;
+            meshObserver = spatialMappingManager.gameObject.GetComponent<MeshSurfaceObserver>();
 
             inputManager = MultiInputManager.Instance;
             anchorShared = gameObject.AddComponent<AnchorShared>();
+
+            anchorShared.Init();
 
             // 设置所有的anchor信息 
             AnchorDefinition[] defines = GameObject.FindObjectsOfType<AnchorDefinition>();
@@ -229,6 +334,8 @@ namespace DataMesh.AR.Anchor
 
             markCamera.gameObject.SetActive(false);
 
+            Debug.Log("Anchor count=" + anchorObjectList.Count);
+
         }
 
         private void FitCamera()
@@ -245,12 +352,14 @@ namespace DataMesh.AR.Anchor
         /// </summary>
         protected override void _TurnOn()
         {
+
             FitCamera();
 
             anchorMarkRoot.SetActive(true);
             BindGazeManager(true);
 
             markCamera.gameObject.SetActive(true);
+
 
 
         }
@@ -328,6 +437,18 @@ namespace DataMesh.AR.Anchor
 
         }
 
+        /// <summary>
+        /// 手工设置一组Mesh，作为SpatialMapping信息，替代原有的Observer
+        /// 主要用于电脑端模拟SpatialMapping使用。
+        /// </summary>
+        /// <param name="meshes">Mesh应为HoloLens中下载的数据</param>
+        public void SetSpatialMeshToObserver(List<Mesh> meshes)
+        {
+            if (meshObserver != null)
+            {
+                meshObserver.SetMeshes(meshes);
+            }
+        }
 
         ////////////////////////////////////////////
         #region 创建、删除、本地存储Anchor相关内容
@@ -394,40 +515,44 @@ namespace DataMesh.AR.Anchor
         /// <param name="info"></param>
         private void AddAnchor(AnchorObjectInfo info)
         {
-            Debug.Log("Add Anchor [" + info.anchorName + "]");
+            //Debug.Log("Add Anchor [" + info.anchorName + "]");
 
             //Debug.Log("  ---anchor=" + info.anchor + " store=" + anchorStore);
             if (anchorStore == null)
             {
+                info.status = AnchorObjectStatus.StoreNotReady;
                 needSaveLater = true;
                 anchorToAdd.Add(info);
                 return;
             }
             if (info.anchor == null)
             {
-                if (anchorStore != null)
-                {
-                    string saveName = GetSaveAnchorName(info.anchorName);
-                    WorldAnchor savedAnchor = anchorStore.Load(saveName, info.rootObject);
+                string saveName = GetSaveAnchorName(info.anchorName);
+                WorldAnchor savedAnchor = anchorStore.Load(saveName, info.rootObject);
                     
-                    if (savedAnchor != null)
-                    {
-                        Debug.Log("Load anchor [" + saveName + "] success!");
-                        info.anchor = savedAnchor;
-                        //info.mark.followRoot = true;
-                        //info.FollowRootObject();
-                    }
-                    else
-                    {
-                        Debug.Log("Can not load anchor [" + info.anchorName + "]");
-                    }
+                if (savedAnchor != null)
+                {
+                    Debug.Log("Load anchor [" + saveName + "] success!");
+                    info.anchor = savedAnchor;
+                    //info.mark.followRoot = true;
+                    //info.FollowRootObject();
+
+                    info.status = AnchorObjectStatus.Saved;
+                }
+                else
+                {
+                    Debug.Log("Can not load anchor [" + info.anchorName + "]");
+                    info.status = AnchorObjectStatus.HasNotSet;
                 }
 
+                /**
+                 * 这里先不要添加anchor组件 
                 if (info.anchor == null)
                 {
                     CreateAnchor(info);
                     SaveAnchor(info);
                 }
+                */
             }
         }
 
@@ -444,6 +569,8 @@ namespace DataMesh.AR.Anchor
 
             WorldAnchor anchor = info.rootObject.AddComponent<WorldAnchor>();
             info.anchor = anchor;
+
+            info.status = AnchorObjectStatus.Saved;
         }
 
         /// <summary>
@@ -452,12 +579,14 @@ namespace DataMesh.AR.Anchor
         /// <param name="info"></param>
         public void RemoveAnchor(AnchorObjectInfo info)
         {
-            if (info.anchor != null)
+            WorldAnchor an = info.rootObject.GetComponent<WorldAnchor>();
+            while (an != null)
             {
-                //anchorStore.Delete(info.anchorName);
-                DestroyImmediate(info.anchor);
-                info.anchor = null;
+                DestroyImmediate(an);
+                an = info.rootObject.GetComponent<WorldAnchor>();
             }
+
+            info.anchor = null;
         }
 
         /// <summary>
@@ -511,6 +640,9 @@ namespace DataMesh.AR.Anchor
         /// <param name="info"></param>
         private void SaveAnchor(AnchorObjectInfo info)
         {
+            if (info.anchor == null)
+                return;
+
             Debug.Log("Save anchor [" + info.anchorName + "] ....");
             info.needSave = true;
             if (info.anchor.isLocated)
@@ -548,6 +680,8 @@ namespace DataMesh.AR.Anchor
             {
                 info.saveSucc = true;
                 Debug.Log("Anchor " + saveName + " Saved!");
+
+
             }
             else
             {
@@ -687,6 +821,36 @@ namespace DataMesh.AR.Anchor
         void Update()
         {
             FitMarkToSpatial();
+
+            // 如果有接入手柄，则进行一些方便的设置 
+            if (currentAnchorInfo != null && inputManager.controllerInput.hasContoller)
+            {
+                if (spatialAdjustType == SpatialAdjustType.None)
+                {
+                    if (inputManager.controllerInput.GetAxisLeftThumbstickX() != 0 || inputManager.controllerInput.GetAxisLeftThumbstickY() != 0)
+                    {
+                        ChangeAdjustType(SpatialAdjustType.Move);
+                    }
+                    else if (inputManager.controllerInput.GetAxisRightThumbstickX() != 0 || inputManager.controllerInput.GetAxisRightThumbstickY() != 0)
+                    {
+                        ChangeAdjustType(SpatialAdjustType.Rotate);
+                    }
+                }
+                else if (spatialAdjustType == SpatialAdjustType.Move)
+                {
+                    if (inputManager.controllerInput.GetAxisLeftThumbstickX() == 0 && inputManager.controllerInput.GetAxisLeftThumbstickY() == 0)
+                    {
+                        ChangeAdjustType(SpatialAdjustType.None);
+                    }
+                }
+                else if (spatialAdjustType == SpatialAdjustType.Rotate)
+                { 
+                    if (inputManager.controllerInput.GetAxisRightThumbstickX() == 0 && inputManager.controllerInput.GetAxisRightThumbstickY() == 0)
+                    {
+                        ChangeAdjustType(SpatialAdjustType.None);
+                    }
+                }
+            }
         }
 
         ////////////////////////////////////////////
@@ -709,7 +873,7 @@ namespace DataMesh.AR.Anchor
                 {
                     Vector3 n = inputManager.hitNormal;
                     //n.y = 0;
-                    currentAnchorInfo.SetTransform(ref inputManager.hitPoint, ref n);
+                    currentAnchorInfo.SetTransform(inputManager.hitPoint, n);
                 }
                 else
                 {
@@ -719,7 +883,7 @@ namespace DataMesh.AR.Anchor
 
                     Vector3 pos = headPosition + gazeDirection * 3;
 
-                    currentAnchorInfo.SetTransform(ref pos);
+                    currentAnchorInfo.SetPosition(pos);
 
                     //Debug.Log("pos=" + pos);
                 }
@@ -826,6 +990,8 @@ namespace DataMesh.AR.Anchor
 
             info.mark.StartAdjust();
 
+            info.definition.startLock = true;
+
             //info.mark.followRoot = false;
 
             info.mark.ShowTips();
@@ -839,6 +1005,8 @@ namespace DataMesh.AR.Anchor
 
             // 存储一下
             SaveAnchor(info);
+
+            info.definition.startLock = false;
 
             ChangeAdjustType(SpatialAdjustType.None);
             info.mark.HideTips();
@@ -860,11 +1028,6 @@ namespace DataMesh.AR.Anchor
             spatialAdjustType = type;
 
             if (type == SpatialAdjustType.Move)
-            {
-                inputManager.ChangeToManipulationRecognizer();
-                currentAnchorInfo.mark.SetAdjustType(AnchorAdjestType.Move);
-            }
-            else if (type == SpatialAdjustType.Readjust)
             {
                 inputManager.ChangeToManipulationRecognizer();
                 currentAnchorInfo.mark.SetAdjustType(AnchorAdjestType.Move);
@@ -952,16 +1115,6 @@ namespace DataMesh.AR.Anchor
                 currentAnchorInfo.mark.HideTips();
 
             }
-            if (spatialAdjustType == SpatialAdjustType.Readjust)
-            {
-                isNav = true;
-                manipulationStartPos = currentAnchorInfo.mark.transform.position;
-
-                currentAnchorInfo.mark.HideTips();
-
-                CalMoveDirection(delta);
-
-            }
         }
 
 
@@ -1014,26 +1167,8 @@ namespace DataMesh.AR.Anchor
                 {
                     Vector3 d = new Vector3(delta.x * moveSpeed, delta.y * moveSpeed, delta.z * moveSpeed);
                     //Debug.Log("M--->" + d);
-                    currentAnchorInfo.mark.transform.position = manipulationStartPos + d;
-                    currentAnchorInfo.FollowMark();
-                }
-            }
-            else if (spatialAdjustType == SpatialAdjustType.Readjust)
-            {
-                if (isNav)
-                {
-                    if (moveDirection == Vector3.zero)
-                    {
-                        CalMoveDirection(delta);
-                        //Debug.Log("Move Dir=" + moveDirection);
-                    }
-                    else
-                    {
-                        Vector3 d = new Vector3(delta.x * moveDirection.x, delta.y * moveDirection.y, delta.z * moveDirection.z);
-                        //Debug.Log("M--->" + d);
-                        currentAnchorInfo.mark.transform.position = manipulationStartPos + d;
-                        currentAnchorInfo.FollowMark();
-                    }
+                    currentAnchorInfo.SetPosition(manipulationStartPos + d);
+                    //currentAnchorInfo.FollowMark();
                 }
             }
         }
@@ -1047,12 +1182,14 @@ namespace DataMesh.AR.Anchor
             {
                 if (isNav)
                 {
-                    Vector3 deltaRot = new Vector3(-delta.y, -delta.x, -delta.z);
-                    currentAnchorInfo.mark.transform.Rotate(deltaRot * rotateSpeed, Space.Self);
-                    currentAnchorInfo.FollowMark();
+                    Vector3 deltaRot = new Vector3(delta.z, -delta.x, -delta.y);
+
+
+                    currentAnchorInfo.Rotate(deltaRot * rotateSpeed, Space.Self);
                 }
             }
         }
+
 
         private void OnManipulationEnd(Vector3 delta)
         {
@@ -1065,10 +1202,6 @@ namespace DataMesh.AR.Anchor
             if (spatialAdjustType == SpatialAdjustType.Move)
             {
                 currentAnchorInfo.mark.ShowMoveAxis(Vector3.one);
-            }
-            if (spatialAdjustType == SpatialAdjustType.Readjust)
-            {
-                currentAnchorInfo.mark.ShowMoveAxis(Vector3.zero);
             }
         }
 
@@ -1094,7 +1227,10 @@ namespace DataMesh.AR.Anchor
                     info.mark.HideTips();
             }
         }
-#endregion
+        #endregion
+
+
+
 
     }
 }

@@ -30,8 +30,18 @@ public class TweenAlpha : UITweener
 		if (mSr == null)
 		{
 			Renderer ren = GetComponent<Renderer>();
-			if (ren != null) mMat = ren.material;
-		}
+            if (ren != null)
+            {
+                if (!Application.isPlaying)
+                {
+                    mMat = ren.sharedMaterial;
+                }
+                else
+                {
+                    mMat = ren.material;
+                }
+            }
+        }
 	}
 
 	/// <summary>

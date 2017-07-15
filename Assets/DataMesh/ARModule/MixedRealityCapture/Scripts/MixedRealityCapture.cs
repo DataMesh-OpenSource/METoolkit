@@ -12,7 +12,7 @@ namespace DataMesh.AR.MRC {
         [HideInInspector]
         public string primaryDomain= "https://social.datamesh.com";
         [HideInInspector]
-        public string app_id = "3";
+        //public string app_id = "3";
 
         public System.Action cbAftarTakePicture;
         public System.Action cbAftarTakeVideo;
@@ -70,7 +70,6 @@ namespace DataMesh.AR.MRC {
         public void UploadImageME(System.Action cbUploadOK, System.Action<string> cbUploadError)
         {
             string token = "3ACE54EFC4B267908AB5210EDFB16A3F";
-            string app_id = this.app_id; //Need To Change
             string filepath = photoCapture.filePath;
             string timeStamp = Time.time.ToString().Replace(".", "").Replace(":", "");
             string filename = string.Format("DataMesh_Image_{0}.jpg", timeStamp);
@@ -78,7 +77,7 @@ namespace DataMesh.AR.MRC {
             {
                 byte[] filebytes = ReadWrite.Instance.GetFileBytes(filepath);
                 string url = "/share/upload/image";
-                StartCoroutine(UploadFileME(app_id, token, filebytes, url, filename, cbUploadOK, cbUploadError));
+                StartCoroutine(UploadFileME(MEHoloEntrance.Instance.AppID, token, filebytes, url, filename, cbUploadOK, cbUploadError));
             }
             else
             {
@@ -88,7 +87,6 @@ namespace DataMesh.AR.MRC {
         public void UploadVideoME(System.Action cbUploadOK, System.Action<string> cbUploadError)
         {
             string token = "3ACE54EFC4B267908AB5210EDFB16A3F";
-            string app_id = this.app_id; //Need To Change
             string filepath = videoCapture.filepath;
             string timeStamp = Time.time.ToString().Replace(".", "").Replace(":", "");
             string filename = string.Format("DataMesh_Video_{0}.mp4", timeStamp);
@@ -96,7 +94,7 @@ namespace DataMesh.AR.MRC {
             {
                 byte[] filebytes = ReadWrite.Instance.GetFileBytes(filepath);
                 string url = "/share/upload/video";
-                StartCoroutine(UploadFileME(app_id, token, filebytes, url, filename, cbUploadOK, cbUploadError));
+                StartCoroutine(UploadFileME(MEHoloEntrance.Instance.AppID, token, filebytes, url, filename, cbUploadOK, cbUploadError));
             }
             else
             {
@@ -110,10 +108,7 @@ namespace DataMesh.AR.MRC {
         {
             this.primaryDomain = primaryDomain; //"http://182.92.123.14:8123"
         }
-        public void SetAppId(string app_id)
-        {
-            this.app_id = app_id; //"2"
-        }
+
         public IEnumerator UploadFileME(string app_id, string token, byte[] filebytes, string url, string filename, System.Action cbUploadOK, System.Action<string> cbUploadError)
         {
             WWWForm form = new WWWForm();

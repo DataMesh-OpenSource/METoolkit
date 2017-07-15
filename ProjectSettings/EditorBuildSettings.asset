@@ -5,7 +5,17 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/DataMesh/Samples/SceneAnchorSample/SceneAnchorSample.unity
   - enabled: 1
+    path: Assets/DataMesh/Samples/SceneAnchorSample/SceneAnchorSample.unity
+  - enabled: 0
     path: Assets/DataMesh/Samples/GettingStarted/Start.unity
+  - enabled: 0
+    path: Assets/DataMesh/Samples/XBoxController/XBOXControllerSample.unity
+  - enabled: 0
+    path: Assets/DataMesh/Samples/LiveSample/LiveExample.unity
+  - enabled: 0
+    path: Assets/HoloLensXboxControllerInput/ExampleScene.unity
+  - enabled: 0
+    path: Assets/Scenes/Scene1.unity
+  - enabled: 0
+    path: Assets/DataMesh/Samples/Storage/StorageSample.unity

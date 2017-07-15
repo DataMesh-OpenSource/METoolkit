@@ -31,14 +31,18 @@ public class DropObject : MonoBehaviour
 
     public bool needDestory = true;
     
-    private System.Action<GameObject, string, string> aniFinishCallBack;
-    private GameObject callBackOBJ;
-    private string callBackString;
-	private string callBackSoldierView;
+    public System.Action<GameObject> aniFinishCallBack;
 
-	// Use this for initialization
-	public void StartShow () 
+    public void StartShow()
     {
+        StartShow(null);
+    }
+
+
+    public void StartShow (System.Action<GameObject> function) 
+    {
+        aniFinishCallBack = function;
+
         startPos = transform.localPosition;
         startTime = Time.time;
         g2 = g * 0.5f;
@@ -52,25 +56,6 @@ public class DropObject : MonoBehaviour
 
     void Start()
     {
-        StartShow();
-    }
-
-    public void StartShow(System.Action<GameObject, string, string> function, GameObject obj, string str, float aniWaitTime, string id)    
-    {
-        startPos = transform.localPosition;
-        startTime = Time.time;
-        g2 = g * 0.5f;
-
-        trans = transform;
-
-        step = 0;
-        
-        aniFinishCallBack = function;
-        callBackOBJ = obj;
-        callBackString = str;
-        callBackSoldierView = id;
-
-        waitTime = aniWaitTime;
     }
 
 	// Update is called once per frame
@@ -138,18 +123,15 @@ public class DropObject : MonoBehaviour
         else
         {
             // 该消失了 
+            if (aniFinishCallBack != null)
+            {
+                aniFinishCallBack(this.gameObject);
+                needDestory = false;
+            }
 
             if (needDestory)
             {
-                if (aniFinishCallBack != null)
-                {
-					aniFinishCallBack(callBackOBJ, callBackString, callBackSoldierView);
-                    needDestory = false;
-                }
-                else
-                {
-                    GameObject.Destroy(gameObject);
-                }                
+                GameObject.Destroy(gameObject);
             }
         }
 

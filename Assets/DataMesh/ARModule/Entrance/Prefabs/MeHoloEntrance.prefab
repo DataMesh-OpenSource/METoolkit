@@ -59,10 +59,10 @@ MonoBehaviour:
     type: 2}
   SpeechPrefab: {fileID: 1447328362248054, guid: 08289698a035c754793fd0173538473f,
     type: 2}
-  MenuPrefab: {fileID: 1882594667235246, guid: 59623d34567116f45a84cc78a70ca610, type: 2}
-  CursorPrefab: {fileID: 1836893036308834, guid: 6786c9a70878e034eb54f46088eb560a,
-    type: 2}
+  UIPerfab: {fileID: 1200402242771120, guid: 49e8f70639693f0448fdbdd1617cd9c2, type: 2}
   CollaborationPrefab: {fileID: 1354366615361850, guid: 1af9c295d1745e4429f5d150fd51d7dd,
+    type: 2}
+  StoragePrefab: {fileID: 1546448322227264, guid: 5c98267bb0eb2ca4699c80154c9be0a4,
     type: 2}
   SocialPrefab: {fileID: 1830974446417084, guid: 89c0d4976c3d3914fb7eaf71b5a4cdd5,
     type: 2}
@@ -70,9 +70,9 @@ MonoBehaviour:
   NeedAnchor: 1
   NeedInput: 1
   NeedSpeech: 1
-  NeedMenu: 1
-  NeedCursor: 1
+  NeedUI: 1
   NeedCollaboration: 1
+  NeedStorage: 1
   NeedSocial: 1
   NeedLive: 1
   HasInit: 0

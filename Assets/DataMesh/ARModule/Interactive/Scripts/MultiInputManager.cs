@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using HoloLensXboxController;
 
 #if UNITY_METRO && !UNITY_EDITOR
 using UnityEngine.VR.WSA;
@@ -201,6 +202,9 @@ namespace DataMesh.AR.Interactive
         [HideInInspector]
         public InputType InteractiveType { get; protected set; }
 
+        [HideInInspector]
+        public XBoxControllerInputManager controllerInput;
+
         private Camera mainCamera;
         private Transform mainCameraTransform;
 
@@ -251,12 +255,17 @@ namespace DataMesh.AR.Interactive
             if (mainCamera != null)
                 mainCameraTransform = mainCamera.transform;
 
+            GameObject obj = new GameObject();
+            obj.transform.SetParent(this.transform);
+            controllerInput = obj.AddComponent<XBoxControllerInputManager>();
+
             t = Time.realtimeSinceStartup;
 
             //layerMask = ~0;
 
         }
 
+        [HideInInspector]
         public bool begin = true;
         // Use this for initialization
         protected override void _Init()
@@ -423,6 +432,39 @@ namespace DataMesh.AR.Interactive
             if (!canCapture)
                 return;
 
+
+            float dT = Time.realtimeSinceStartup - t;
+            t = Time.realtimeSinceStartup;
+
+
+            // 确定当前注视射线 
+            if (InteractiveType == InputType.Touch || (InteractiveType == InputType.KeybordAndMouse && !simulateGaze))
+            {
+                Vector3 pos;
+                if (InteractiveType == InputType.Touch)
+                {
+                    Touch touch = Input.GetTouch(0);
+                    pos = touch.position;
+                }
+                else
+                {
+                    pos = Input.mousePosition;
+                }
+                headPosition = mainCamera.transform.position;
+                Ray r = mainCamera.ScreenPointToRay(pos);
+                gazeDirection = r.direction;
+
+                RayCastForObject(ref r);
+            }
+            else
+            {
+                headPosition = mainCamera.transform.position;
+                gazeDirection = mainCamera.transform.forward;
+
+                RayCastForObject();
+            }
+
+
             // 触摸屏情况下的输入 
             if (InteractiveType == InputType.Touch)
             {
@@ -435,13 +477,6 @@ namespace DataMesh.AR.Interactive
                 if (Input.touchCount == 1)
                 {
                     Touch touch = Input.GetTouch(0);
-
-                    // 触摸屏不使用摄像机注释计算，而是使用点击位置 
-                    headPosition = mainCamera.transform.position;
-                    Ray r = mainCamera.ScreenPointToRay(touch.position);
-                    gazeDirection = r.direction;
-
-                    RayCastForObject(ref r);
 
                     if (touch.phase == TouchPhase.Began)
                     {
@@ -509,23 +544,6 @@ namespace DataMesh.AR.Interactive
             }
             else if (InteractiveType == InputType.KeybordAndMouse)
             {
-        
-                float dT = Time.realtimeSinceStartup - t;
-                t = Time.realtimeSinceStartup;
-
-                // 键盘鼠标，模拟手势 
-                if (simulateGaze)
-                {
-                    headPosition = mainCamera.transform.position;
-                    gazeDirection = mainCamera.transform.forward;
-                }
-                else
-                {
-                    headPosition = mainCamera.transform.position;
-                    Ray r = mainCamera.ScreenPointToRay(Input.mousePosition);
-                    gazeDirection = r.direction;
-                }
-                RayCastForObject();
 
                 // 模拟Tap
                 if (simulateGaze)
@@ -598,18 +616,17 @@ namespace DataMesh.AR.Interactive
                                 navDelta = Vector3.zero;
                                 if (cbNavigationStart != null)
                                     cbNavigationStart(navigationStartPosition);
-
-                                if (cbNavigationStart == null)
-                                    Debug.Log("cbNavigationStart == null");
                             }
 
-                            navDelta += mainCameraTransform.TransformDirection(new Vector3(right, up, forward) * navSpeed * dT);
+                            /*
+                            navDelta += new Vector3(right, up, forward) * navSpeed * dT;
                             navDelta.x = Mathf.Clamp(navDelta.x, -1, 1);
                             navDelta.y = Mathf.Clamp(navDelta.y, -1, 1);
                             navDelta.z = Mathf.Clamp(navDelta.z, -1, 1);
+                            */
 
                             if (cbNavigationUpdate != null)
-                                cbNavigationUpdate(navDelta);
+                                cbNavigationUpdate(new Vector3(right, up, forward));
                         }
                         else
                         {
@@ -683,16 +700,91 @@ namespace DataMesh.AR.Interactive
                     }
                 }
             }
-            else if (InteractiveType == InputType.GazeAndGesture)
+
+
+            // 如果需要摇杆模拟 
+            if (controllerInput.hasContoller)
             {
-                // 如果是用注视计算 
-                headPosition = mainCamera.transform.position;
-                gazeDirection = mainCamera.transform.forward;
+                // 模拟Tap
+                if (controllerInput.GetButtonDown(ControllerButton.A))
+                {
+                    OnTap(InteractionSourceKind.Controller, 1, ray);
+                }
 
-                RayCastForObject();
+                // 模拟Manipulation
+                float leftX = controllerInput.GetAxisLeftThumbstickX();
+                float leftY = controllerInput.GetAxisLeftThumbstickY();
+                if (leftX != 0 || leftY != 0)
+                {
+                    float forward = 0f;
+                    float right = leftX;
+                    float up = 0f;
 
+                    if (controllerInput.GetAxisLeftTrigger() > 0.5f)
+                        forward = leftY;
+                    else
+                        up = leftY;
+
+                    if (!manipulationSimStart)
+                    {
+                        manipulationSimStart = true;
+                        manipulationStartPosition = Vector3.zero;
+                        maniDelta = Vector3.zero;
+                        if (cbManipulationStart != null)
+                            cbManipulationStart(manipulationStartPosition);
+                    }
+                    maniDelta += mainCameraTransform.TransformDirection(new Vector3(right, up, forward) * manipulationSpeed * dT);
+
+                    if (cbManipulationUpdate != null)
+                        cbManipulationUpdate(maniDelta);
+                }
+                else
+                {
+                    if (manipulationSimStart)
+                    {
+                        manipulationSimStart = false;
+                        if (cbManipulationEnd != null)
+                            cbManipulationEnd(maniDelta);
+                    }
+                }
+
+                // 模拟Navigation
+                leftX = controllerInput.GetAxisRightThumbstickX();
+                leftY = controllerInput.GetAxisRightThumbstickY();
+                if (leftX != 0 || leftY != 0)
+                {
+                    float forward = 0f;
+                    float right = leftX;
+                    float up = 0f;
+
+                    if (controllerInput.GetAxisRightTrigger() > 0.5f)
+                        forward = leftY;
+                    else
+                        up = leftY;
+
+                    if (!navigationSimStart)
+                    {
+
+                        navigationSimStart = true;
+                        navigationStartPosition = Vector3.zero;
+                        if (cbNavigationStart != null)
+                            cbNavigationStart(navigationStartPosition);
+
+                    }
+
+                    if (cbNavigationUpdate != null)
+                        cbNavigationUpdate(new Vector3(right, up, forward));
+                }
+                else
+                {
+                    if (navigationSimStart)
+                    {
+                        navigationSimStart = false;
+                        if (cbNavigationEnd != null)
+                            cbNavigationEnd(navDelta);
+                    }
+                }
             }
-
 
         }
 

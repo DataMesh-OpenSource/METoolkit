@@ -144,7 +144,7 @@ namespace DataMesh.AR.UI
                 TransitObject[] list = GetComponentsInChildren<TransitObject>(true);
                 //Debug.Log("Find " + list.Length + " child");
                 for (int i = 0; i < list.Length; i++)
-                {
+                { 
                     TransitObject tobj = list[i];
 
                     if (tobj != null && tobj != this && tobj.transitGroup == this.transitGroup)
@@ -167,6 +167,7 @@ namespace DataMesh.AR.UI
                         count++;
                     }
                 }
+                //Debug.Log("Transit " + count + " sub object");
             }
 
             foc.Start();

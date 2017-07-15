@@ -1,4 +1,4 @@
-﻿using MEHoloClient.Entities;
+﻿using MEHoloClient.Proto;
 
 namespace DataMesh.AR.Network
 {

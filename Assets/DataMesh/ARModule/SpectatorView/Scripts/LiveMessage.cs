@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MEHoloClient.Utils;
+using DataMesh.AR.Utility;
 
 public class LiveMessageConstant
 { 
@@ -19,6 +20,10 @@ public class LiveMessageConstant
     public const int BEV_MESSAGE_TYPE_SYNCHRONIZE_CAMERA = 11;
     public const int BEV_MESSAGE_TYPE_SYNCHRONIZE_ANCHOR = 12;
     public const int BEV_MESSAGE_TYPE_SYNCHRONIZE_ALL = 13;
+    public const int BEV_MESSAGE_TYPE_SYNCHRONIZE_ALL_WITH_ROTATION = 14;
+
+    public const int BEV_MESSAGE_TYPE_REQUEST_SPATIAL_MAPPING = 21;
+    public const int BEV_MESSAGE_TYPE_RESPONSE_SPATIAL_MAPPING = 22;
 
 }
 
@@ -29,6 +34,13 @@ public class LiveMessageManager
     public static LiveMessage ParseMessage(byte[] bytes)
     {
         LiveMessage msg = null;
+
+        if (bytes.Length == 0)
+        {
+            Debug.LogError("Error: Message length=0!");
+            return msg;
+        }
+
         switch (bytes[0])
         {
             case LiveMessageConstant.BEV_MESSAGE_TYPE_START:
@@ -43,12 +55,6 @@ public class LiveMessageManager
             case LiveMessageConstant.BEV_MESSAGE_TYPE_SET_ANCHOR:
                 msg = new LiveMessageSetAnchor();
                 break;
-            case LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_ANCHOR:
-                msg = new LiveMessageSynchronizeAnchor();
-                break;
-            case LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_CAMERA:
-                msg = new LiveMessageSynchronizeCamera();
-                break;
             case LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_ALL:
                 msg = new LiveMessageSynchronizeAll();
                 break;
@@ -61,43 +67,33 @@ public class LiveMessageManager
             case LiveMessageConstant.BEV_MESSAGE_TYPE_SAVE_ANCHOR:
                 msg = new LiveMessageSaveAnchor();
                 break;
+            case LiveMessageConstant.BEV_MESSAGE_TYPE_SAVE_ANCHOR_FINISH:
+                msg = new LiveMessageSaveAnchorFinish();
+                break;
+            case LiveMessageConstant.BEV_MESSAGE_TYPE_REQUEST_SPATIAL_MAPPING:
+                msg = new LiveMessageRequestSpatialMapping();
+                break;
+            case LiveMessageConstant.BEV_MESSAGE_TYPE_RESPONSE_SPATIAL_MAPPING:
+                msg = new LiveMessageResponseSpatialMapping();
+                break;
+            default:
+                Debug.LogError("No such type message!");
+                return msg;
         }
 
-        msg.Deserialize(bytes);
+        try
+        {
+            msg.Deserialize(bytes);
+        }
+        catch (Exception e)
+        {
+            msg = null;
+            Debug.LogError("Parse Message Error! " + e);
+        }
+
         return msg;
     }
 
-    public static void WriteVectorToBytes(byte[] data, Vector3 vector, ref int index)
-    {
-        byte[] floatBytes;
-
-        floatBytes = BitConverter.GetBytes(vector.x);
-        Array.Copy(floatBytes, 0, data, index, floatBytes.Length);
-        index += floatBytes.Length;
-
-        floatBytes = BitConverter.GetBytes(vector.y);
-        Array.Copy(floatBytes, 0, data, index, floatBytes.Length);
-        index += floatBytes.Length;
-
-        floatBytes = BitConverter.GetBytes(vector.z);
-        Array.Copy(floatBytes, 0, data, index, floatBytes.Length);
-        index += floatBytes.Length;
-
-    }
-
-    public static void GetVectorFromBytes(byte[] data, out Vector3 vector, ref int index)
-    {
-        vector = new Vector3();
-
-        vector.x = BitConverter.ToSingle(data, index);
-        index += 4;
-
-        vector.y = BitConverter.ToSingle(data, index);
-        index += 4;
-
-        vector.z = BitConverter.ToSingle(data, index);
-        index += 4;
-    }
 }
 
 public class LiveMessage
@@ -186,109 +182,17 @@ public class LiveMessageSetAnchorFinish : LiveMessage
 }
 
 
-
-/// <summary>
-/// hololens端向pc端同步摄像机位置的消息
-/// </summary>
-public class LiveMessageSynchronizeCamera : LiveMessage
-{
-    public Vector3 position;
-    public Vector3 rotation;
-
-    public LiveMessageSynchronizeCamera()
-    {
-        type = LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_CAMERA;
-    }
-
-    public override byte[] Serialize()
-    {
-        byte[] rs = new byte[4 * 6 + 1];
-
-        rs[0] = (byte)type;
-
-        int index = 1;
-
-        LiveMessageManager.WriteVectorToBytes(rs, position, ref index);
-        LiveMessageManager.WriteVectorToBytes(rs, rotation, ref index);
-
-        return rs;
-
-    }
-
-    public override void Deserialize(byte[] data)
-    {
-        type = data[0];
-
-        int index = 1;
-        LiveMessageManager.GetVectorFromBytes(data, out position, ref index);
-        LiveMessageManager.GetVectorFromBytes(data, out rotation, ref index);
-    }
-
-}
-
-/// <summary>
-/// hololens端向pc端同步anchor的消息
-/// </summary>
-public class LiveMessageSynchronizeAnchor : LiveMessage
-{
-    public int anchorCount;
-    public List<Vector3> anchorPositionList = new List<Vector3>();
-    public List<Vector3> anchorRotationList = new List<Vector3>();
-
-    public LiveMessageSynchronizeAnchor()
-    {
-        type = LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_ANCHOR;
-    }
-
-    public override byte[] Serialize()
-    {
-        byte[] rs = new byte[anchorCount * 4 * 6 + 2];
-
-        rs[0] = (byte)type;
-        rs[1] = (byte)anchorCount;
-
-        int index = 2;
-
-        for (int i = 0;i < anchorCount;i ++)
-        {
-            LiveMessageManager.WriteVectorToBytes(rs, anchorPositionList[i], ref index);
-            LiveMessageManager.WriteVectorToBytes(rs, anchorRotationList[i], ref index);
-        }
-
-        return rs;
-
-    }
-
-    public override void Deserialize(byte[] data)
-    {
-        type = data[0];
-        anchorCount = data[1];
-
-        int index = 2;
-        anchorPositionList.Clear();
-        anchorRotationList.Clear();
-
-        for (int i = 0; i < anchorCount; i++)
-        {
-            Vector3 pos, rot;
-            LiveMessageManager.GetVectorFromBytes(data, out pos, ref index);
-            LiveMessageManager.GetVectorFromBytes(data, out rot, ref index);
-
-            anchorPositionList.Add(pos);
-            anchorRotationList.Add(rot);
-        }
-    }
-
-}
-
 public class LiveMessageSynchronizeAll : LiveMessage
 {
+    public int seq;
     public Vector3 position;
-    public Vector3 rotation;
+    public Quaternion rotation;
     public int anchorCount;
     public Vector3[] anchorPositionList;
-    public Vector3[] anchorRotationList;
+    public Quaternion[] anchorRotationList;
     public bool[] anchorIsLocated;
+
+    public float receiveTime;
 
     public LiveMessageSynchronizeAll()
     {
@@ -297,20 +201,24 @@ public class LiveMessageSynchronizeAll : LiveMessage
 
     public override byte[] Serialize()
     {
-        byte[] rs = new byte[2 + 4 * 6 + anchorCount * (4 * 6) + anchorCount];
+        byte[] rs = new byte[6 + 4 * 7 + anchorCount * (4 * 7) + anchorCount];
 
-        rs[0] = (byte)type;
-        rs[1] = (byte)anchorCount;
 
-        int index = 2;
+        int index = 0;
 
-        LiveMessageManager.WriteVectorToBytes(rs, position, ref index);
-        LiveMessageManager.WriteVectorToBytes(rs, rotation, ref index);
+        BytesUtility.WriteByteToTBytes(rs, (byte)type, ref index);
+
+        BytesUtility.WriteIntToBytes(rs, seq, ref index);
+
+        BytesUtility.WriteByteToTBytes(rs, (byte)anchorCount, ref index);
+
+        BytesUtility.WriteVectorToBytes(rs, position, ref index);
+        BytesUtility.WriteVectorToBytes(rs, rotation, ref index);
 
         for (int i = 0; i < anchorCount; i++)
         {
-            LiveMessageManager.WriteVectorToBytes(rs, anchorPositionList[i], ref index);
-            LiveMessageManager.WriteVectorToBytes(rs, anchorRotationList[i], ref index);
+            BytesUtility.WriteVectorToBytes(rs, anchorPositionList[i], ref index);
+            BytesUtility.WriteVectorToBytes(rs, anchorRotationList[i], ref index);
 
         }
 
@@ -330,23 +238,31 @@ public class LiveMessageSynchronizeAll : LiveMessage
 
     public override void Deserialize(byte[] data)
     {
-        type = data[0];
-        anchorCount = data[1];
+        int index = 0;
+        byte b;
+
+        BytesUtility.GetByteFromBytes(data, out b, ref index);
+        type = b;
+
+        BytesUtility.GetIntFromBytes(data, out seq, ref index);
+
+        BytesUtility.GetByteFromBytes(data, out b, ref index);
+        anchorCount = b;
 
 
-        int index = 2;
-        LiveMessageManager.GetVectorFromBytes(data, out position, ref index);
-        LiveMessageManager.GetVectorFromBytes(data, out rotation, ref index);
+        BytesUtility.GetVectorFromBytes(data, out position, ref index);
+        BytesUtility.GetVectorFromBytes(data, out rotation, ref index);
 
         anchorPositionList = new Vector3[anchorCount];
-        anchorRotationList = new Vector3[anchorCount];
+        anchorRotationList = new Quaternion[anchorCount];
         anchorIsLocated = new bool[anchorCount];
 
         for (int i = 0; i < anchorCount; i++)
         {
-            Vector3 pos, rot;
-            LiveMessageManager.GetVectorFromBytes(data, out pos, ref index);
-            LiveMessageManager.GetVectorFromBytes(data, out rot, ref index);
+            Vector3 pos;
+            Quaternion rot;
+            BytesUtility.GetVectorFromBytes(data, out pos, ref index);
+            BytesUtility.GetVectorFromBytes(data, out rot, ref index);
 
             anchorPositionList[i] = pos;
             anchorRotationList[i] = rot;
@@ -374,7 +290,49 @@ public class LiveMessageSynchronizeAll : LiveMessage
             }
         }
     }
+
+    public string FormatLogString()
+    {
+        string rs = "";
+
+        AddIntString(ref rs, ref this.seq);
+
+        AddVector3String(ref rs, ref this.position);
+        AddQuaternionString(ref rs, ref this.rotation);
+
+        AddIntString(ref rs, ref this.anchorCount);
+
+        for (int i = 0; i < this.anchorCount; i++)
+        {
+            AddVector3String(ref rs, ref this.anchorPositionList[i]);
+            AddQuaternionString(ref rs, ref this.anchorRotationList[i]);
+        }
+
+        return rs;
+    }
+    private void AddFloatString(ref string str, ref float f)
+    {
+        str += f.ToString("f8") + ",";
+    }
+    private void AddIntString(ref string str, ref int n)
+    {
+        str += n.ToString() + ",";
+    }
+    private void AddVector3String(ref string str, ref Vector3 v)
+    {
+        AddFloatString(ref str, ref v.x);
+        AddFloatString(ref str, ref v.y);
+        AddFloatString(ref str, ref v.z);
+    }
+    private void AddQuaternionString(ref string str, ref Quaternion v)
+    {
+        AddFloatString(ref str, ref v.x);
+        AddFloatString(ref str, ref v.y);
+        AddFloatString(ref str, ref v.z);
+        AddFloatString(ref str, ref v.w);
+    }
 }
+
 
 
 /// <summary>
@@ -422,12 +380,15 @@ public class LiveMessageSetAnchor : LiveMessageByJson
     {
         public string serverHost;
         public int serverPort;
-        public int appId;
+        public bool useUDP;
+        public int serverPortUDP;
+        public string appId;
         public string roomId;
-        public bool isInit;
+        public int logIndex;
         public List<string> anchorNameList = new List<string>();
         public List<Vector3InMessage> anchorPosition = new List<Vector3InMessage>();
         public List<Vector3InMessage> anchorForward = new List<Vector3InMessage>();
+        public bool sendRotation = false;
     }
 
     public LiveMessageSetAnchorData anchorData = new LiveMessageSetAnchorData();
@@ -455,13 +416,10 @@ public class LiveMessageSaveAnchor : LiveMessageByJson
 {
     public class LiveMessageSetAnchorData
     {
-        public string serverHost;
-        public int serverPort;
-        public int appId;
-        public string roomId;
         public List<string> anchorNameList = new List<string>();
         public List<Vector3InMessage> anchorPosition = new List<Vector3InMessage>();
         public List<Vector3InMessage> anchorForward = new List<Vector3InMessage>();
+        public bool sendRotation = false;
     }
 
     public LiveMessageSetAnchorData anchorData = new LiveMessageSetAnchorData();
@@ -535,6 +493,46 @@ public class LiveMessageSaveAnchorFinish : LiveMessageResult
 }
 
 
+public class LiveMessageRequestSpatialMapping : LiveMessage
+{
+    public LiveMessageRequestSpatialMapping()
+    {
+        type = LiveMessageConstant.BEV_MESSAGE_TYPE_REQUEST_SPATIAL_MAPPING;
+    }
+}
+
+public class LiveMessageResponseSpatialMapping : LiveMessage
+{
+    public byte[] mapData;
+
+    public LiveMessageResponseSpatialMapping()
+    {
+        type = LiveMessageConstant.BEV_MESSAGE_TYPE_RESPONSE_SPATIAL_MAPPING;
+    }
+
+    public override byte[] Serialize()
+    {
+        byte[] rs = new byte[mapData.Length + 1];
+
+        rs[0] = (byte)type;
+
+        int index = 1;
+
+        Array.Copy(mapData, 0, rs, index, mapData.Length);
+
+        return rs;
+    }
+
+    public override void Deserialize(byte[] data)
+    {
+        type = data[0];
+
+        int index = 1;
+
+        mapData = new byte[data.Length - 1];
+        Array.Copy(data, index, mapData, 0, data.Length - 1);
+    }
+}
 
 //========================
 

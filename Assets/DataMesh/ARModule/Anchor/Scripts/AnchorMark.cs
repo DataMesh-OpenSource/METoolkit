@@ -44,7 +44,7 @@ namespace DataMesh.AR.Anchor
 
         private AnchorAdjestType adjustType = AnchorAdjestType.None;
 
-        [HideInInspector]
+        
         public Transform rootObjectTransform;
         //public bool followRoot = true;
 
@@ -63,7 +63,7 @@ namespace DataMesh.AR.Anchor
             HideRotateScene();
         }
 
-        void Update()
+        void LateUpdate()
         {
             trans.position = rootObjectTransform.position + offset;
             trans.rotation = rootObjectTransform.rotation;

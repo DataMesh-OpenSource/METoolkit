@@ -367,6 +367,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4608579681119134}
   - component: {fileID: 114224096588033704}
+  - component: {fileID: 114967532888808774}
   m_Layer: 30
   m_Name: AnchorMark
   m_TagString: Untagged
@@ -587,8 +588,8 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
 --- !u!23 &23329944157401810
 MeshRenderer:
   m_ObjectHideFlags: 1
@@ -618,8 +619,8 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
 --- !u!23 &23641573679507334
 MeshRenderer:
   m_ObjectHideFlags: 1
@@ -649,8 +650,8 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
 --- !u!23 &23666377146060052
 MeshRenderer:
   m_ObjectHideFlags: 1
@@ -680,8 +681,8 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
 --- !u!33 &33013176823584286
 MeshFilter:
   m_ObjectHideFlags: 1
@@ -1376,6 +1377,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfcf2e3d01cb59f4789ce79b875fed88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useOffset: 0
+  rotateOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &114967532888808774
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1868289096912416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61409cfee1d8da34da415c4cb241880f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sortingLayer: AnchorUI
+  Order: 32000
+  beFitForParentsOrder: 0
+  CanChangeAllRendererSortingOrder: 1
+  CanChangeAllParticleSortingOrder: 1
+  CanChangeAllCanvasSortingOrder: 1
+  CanChangeThisRendersoringOrder: 1
+  CanChangeThisParticleSortingOrder: 1
+  CanChangeThisCanvasOrder: 1
+  AlwaysKeepOrder: 1
 --- !u!114 &114976422993242384
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1509,8 +1533,8 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
   m_TargetDisplay: 0
 --- !u!223 &223669114647167732
 Canvas:
@@ -1528,8 +1552,8 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
   m_TargetDisplay: 0
 --- !u!223 &223697468174635366
 Canvas:
@@ -1547,8 +1571,8 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1132064917
+  m_SortingOrder: 32000
   m_TargetDisplay: 0
 --- !u!224 &224177942543723652
 RectTransform:

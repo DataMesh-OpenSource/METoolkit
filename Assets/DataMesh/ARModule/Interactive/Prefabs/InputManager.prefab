@@ -51,7 +51,7 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1331324292690694}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -106,11 +106,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   simulateGaze: 1
+  needAssistKey: 1
   headPosition: {x: 0, y: 0, z: 0}
   gazeDirection: {x: 0, y: 0, z: 0}
   hitPoint: {x: 0, y: 0, z: 0}
   hitNormal: {x: 0, y: 0, z: 0}
   hitCollider: {fileID: 0}
+  controllerInput: {fileID: 0}
   begin: 1
 --- !u!114 &114278755712113288
 MonoBehaviour:

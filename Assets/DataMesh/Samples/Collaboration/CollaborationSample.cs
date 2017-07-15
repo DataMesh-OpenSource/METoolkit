@@ -2,7 +2,9 @@
 using UnityEngine;
 using DataMesh.AR.Interactive;
 using DataMesh.AR.Network;
+using DataMesh.AR.UI;
 using MEHoloClient.Entities;
+using MEHoloClient.Proto;
 
 namespace DataMesh.AR.Samples.Collaboration
 {
@@ -16,21 +18,19 @@ namespace DataMesh.AR.Samples.Collaboration
     {
         private MultiInputManager inputManager;
         CollaborationManager cm;
+        CursorController cursor;
 
-        int appId;
-        string roomId;
-        string serverHost;
-        int serverPort;
         ColorType CurrentColor;
         ShowObject showObject;
-        SceneObjects roomData;
+        SceneObject roomData;
+
+        void Awake()
+        {
+            MEHoloEntrance.Instance.AppID = "CollaborationSample";
+        }
+
         void Start()
         {
-            appId = int.Parse("1");
-            roomId = "test";
-            serverHost = "192.168.2.50";
-            serverPort = int.Parse("8823");
-
             StartCoroutine(WaitForInit());
         }
 
@@ -43,6 +43,8 @@ namespace DataMesh.AR.Samples.Collaboration
                 yield return null;
             }
 
+            cursor = UIManager.Instance.cursorController;
+
 
             // Todo: Begin your logic
             inputManager = MultiInputManager.Instance;
@@ -50,21 +52,24 @@ namespace DataMesh.AR.Samples.Collaboration
 
             cm = CollaborationManager.Instance;
             cm.AddMessageHandler(this);
-            cm.appId = appId;
-            cm.roomId = roomId;
-            cm.serverHost = serverHost;
-            cm.serverPort = serverPort;
             cm.cbEnterRoom = cbEnterRoom;
 
-            roomData = new SceneObjects();
             string showId = "showId001";
-            bool enabled = false;
             string obj_type = "ColorType";
-            float[] pr = new float[7];
-            float[] prInit = new float[7];
-            showObject = new ShowObject(showId, enabled, pr, prInit);
-            showObject.obj_type = obj_type;
-            roomData.ShowObjectDic.Add(showObject.show_id, showObject);
+
+            MsgEntry msg = new MsgEntry();
+            msg.ShowId = showId;
+
+            ObjectInfo info = new ObjectInfo();
+            info.ObjType = obj_type;
+            msg.Info = info;
+
+            msg.Vec.Add((long)CurrentColor);
+
+            showObject = new ShowObject(msg);
+            roomData = new SceneObject();
+            roomData.ShowObjectDic.Add(showObject.ShowId, showObject);
+
             cm.roomInitData = roomData;
             cm.TurnOn();
 
@@ -72,7 +77,21 @@ namespace DataMesh.AR.Samples.Collaboration
 
         private void OnTap(int count)
         {
-            ClickCube();
+            if (cm.enterRoomResult == EnterRoomResult.EnterRoomSuccess)
+            {
+                ClickCube();
+            }
+            else
+            {
+                if (cm.enterRoomResult == EnterRoomResult.Waiting)
+                {
+                    cursor.ShowInfo("waiting....");
+                }
+                else
+                {
+                    cursor.ShowInfo("Error! " + cm.enterRoomResult);
+                }
+            }
         }
         /// <summary>
         /// Callback function of EnterRoom
@@ -82,7 +101,6 @@ namespace DataMesh.AR.Samples.Collaboration
             Debug.Log("Enter Room Sucessfully");
         }
 
-        [ContextMenu("ClickCube")]
         private void ClickCube()
         {
             CurrentColor += 1;
@@ -90,13 +108,16 @@ namespace DataMesh.AR.Samples.Collaboration
             {
                 CurrentColor = 0;
             }
-            //ChangeCubeColor(CurrentColor);
-            showObject.pr[0] = (float)CurrentColor;
-            roomData.ShowObjectDic[showObject.show_id] = showObject;
-            MsgEntry entry = new MsgEntry(OP_TYPE.UPD, showObject.show_id, true, showObject.pr, null, null);
-            entry.obj_type = showObject.obj_type;
-            cm.SendMessage(new MsgEntry[1] { entry });
-            //Debug.Log(showObject.pr[0]);
+
+            MsgEntry entry = new MsgEntry();
+            entry.OpType = MsgEntry.Types.OP_TYPE.Upd;
+            entry.ShowId = showObject.ShowId;
+            entry.Vec.Add((long)CurrentColor);
+
+            SyncMsg msg = new SyncMsg();
+            msg.MsgEntry.Add(entry);
+
+            cm.SendMessage(msg);
         }
 
         void ChangeCubeColor(ColorType CurrentColor)
@@ -139,16 +160,16 @@ namespace DataMesh.AR.Samples.Collaboration
         }
         void DealMessage(SyncProto proto)
         {
-            MsgEntry[] messages = proto.sync_msg.msg_entry;
+            Google.Protobuf.Collections.RepeatedField<MsgEntry> messages = proto.SyncMsg.MsgEntry;
             //Debug.Log("deal message");
             if (messages == null)
                 return;
-            for (int i = 0; i < messages.Length; i++)
+            for (int i = 0; i < messages.Count; i++)
             {
                 MsgEntry msgEntry = messages[i];
-                if (msgEntry.show_id == showObject.show_id)
+                if (msgEntry.ShowId == showObject.ShowId)
                 {
-                    ChangeCubeColor((ColorType)((int)msgEntry.pr[0]));
+                    ChangeCubeColor((ColorType)((int)msgEntry.Vec[0]));
                 }
 
             }

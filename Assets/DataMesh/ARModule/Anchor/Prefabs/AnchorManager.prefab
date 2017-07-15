@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 4698199461130612}
   - component: {fileID: 114795518250257594}
   - component: {fileID: 114356836606299842}
-  - component: {fileID: 114120090775389160}
+  - component: {fileID: 114444464163368428}
   m_Layer: 0
   m_Name: SpatialMapping
   m_TagString: Untagged
@@ -137,19 +137,6 @@ Camera:
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
   m_StereoMirrorMode: 0
---- !u!114 &114120090775389160
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1564128040459772}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03a419de54ba52944adcdc69fe3c624f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  RoomModel: {fileID: 0}
-  SimulatedUpdatePeriodInSeconds: -1
 --- !u!114 &114356836606299842
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -164,6 +151,18 @@ MonoBehaviour:
   TrianglesPerCubicMeter: 500
   Extents: {x: 10, y: 10, z: 10}
   TimeBetweenUpdates: 3.5
+--- !u!114 &114444464163368428
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1564128040459772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9ecc1b30ffcf304e982ac94274fdbdf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SimulatedUpdatePeriodInSeconds: -1
 --- !u!114 &114679863632926184
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -179,11 +178,7 @@ MonoBehaviour:
   AnchorMarkLayer: 30
   anchorNameList:
   - Cube
-  - Sphere
-  - Cylinder
   anchorRootList:
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 0}
   markPrefab: {fileID: 1868289096912416, guid: 3856b3792d7657a47bb1b10ea63f5015, type: 2}
   appId: 1

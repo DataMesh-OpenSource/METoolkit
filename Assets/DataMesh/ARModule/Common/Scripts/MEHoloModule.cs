@@ -14,6 +14,9 @@ namespace DataMesh.AR
         /// </summary>
         public void Init()
         {
+            if (hasInit)
+                return;
+
             _Init();
             hasInit = true;
 
@@ -45,6 +48,9 @@ namespace DataMesh.AR
             if (!HasInit())
                 return;
 
+            if (hasTurnOn)
+                return;
+
             hasTurnOn = true;
 
             _TurnOn();
@@ -69,6 +75,12 @@ namespace DataMesh.AR
         /// </summary>
         public void TurnOff()
         {
+            if (!HasInit())
+                return;
+
+            if (!hasTurnOn)
+                return;
+
             _TurnOff();
 
             hasTurnOn = false;

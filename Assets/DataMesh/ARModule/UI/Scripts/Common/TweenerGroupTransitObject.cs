@@ -74,6 +74,17 @@ namespace DataMesh.AR.UI
             }
         }
 
+        private void ResetTween(UITweener tw, bool isIn)
+        {
+            if (tw == null)
+                return;
+            if ((isIn && tw.direction == TweenDirection.Reverse) || (!isIn && tw.direction == TweenDirection.Forward))
+                tw.Toggle();
+            tw.ResetToBeginning();
+            tw.enabled = false;
+
+        }
+
         public void resetTransit(bool isIn)
         {
             if (isIn)
@@ -81,10 +92,7 @@ namespace DataMesh.AR.UI
                 for (int i = 0; i < transitInTweener.Count; i++)
                 {
                     UITweener tw = transitInTweener[i];
-                    if ((isIn && tw.direction == TweenDirection.Reverse) || (!isIn && tw.direction == TweenDirection.Forward))
-                        tw.Toggle();
-                    tw.ResetToBeginning();
-                    tw.enabled = false;
+                    ResetTween(tw, isIn);
                 }
             }
             else
@@ -92,10 +100,7 @@ namespace DataMesh.AR.UI
                 for (int i = 0; i < transitOutTweener.Count; i++)
                 {
                     UITweener tw = transitOutTweener[i];
-                    if ((isIn && tw.direction == TweenDirection.Reverse) || (!isIn && tw.direction == TweenDirection.Forward))
-                        tw.Toggle();
-                    tw.ResetToBeginning();
-                    tw.enabled = false;
+                    ResetTween(tw, isIn);
                 }
             }
 
@@ -162,12 +167,25 @@ namespace DataMesh.AR.UI
             else
                 twList = transitOutTweener;
 
+            if (needResetBeforeTransit)
+            {
+                resetTransit(isIn);
+            }
+
             UITweener longest = null;
             for (int i = 0; i < twList.Count; i++)
             {
                 UITweener tw = twList[i];
+                if (tw == null)
+                    continue;
 
-                if (!needResetBeforeTransit && (isIn && tw.tweenFactor >= 1) || (!isIn && tw.tweenFactor <= 0))
+                if (!isIn && !tw.gameObject.activeInHierarchy)
+                {
+                    // 如果是出场，但物体已经设置为不可见了，就不再计算它了
+                    continue;
+                }
+
+                if ((isIn && tw.tweenFactor >= 1) || (!isIn && tw.tweenFactor <= 0))
                 {
                     continue;
                 }
@@ -201,33 +219,20 @@ namespace DataMesh.AR.UI
             for (int i = 0; i < twList.Count; i++)
             {
                 UITweener tw = twList[i];
+                if (tw == null)
+                    continue;
+
+                if (!isIn && !tw.gameObject.activeSelf)
+                {
+                    // 如果是出场，但物体已经设置为不可见了，就不再计算它了
+                    continue;
+                }
+
                 tw.ignoreTimeScale = false;
 
                 //LogManager.Log("play tw" + tw);
                 // 播放每一个变换
-                if (isIn)
-                {
-                    if (tw.direction == TweenDirection.Reverse)
-                    {
-                        tw.Toggle();
-                        tw.enabled = false;
-                    }
-                    if (needResetBeforeTransit)
-                        tw.ResetToBeginning();
-                    tw.Play(isIn);
-                }
-                else
-                {
-                    if (tw.direction == TweenDirection.Forward)
-                    {
-                        tw.Toggle();
-                        tw.enabled = false;
-                    }
-                    if (needResetBeforeTransit)
-                        tw.ResetToBeginning();
-                    tw.Play(isIn);
-
-                }
+                tw.Play(isIn);
             }
 
 

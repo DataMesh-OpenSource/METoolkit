@@ -14,6 +14,9 @@ public class AnchorDefinitionEditor : Editor
 
     void OnSceneGUI()
     {
+        if (Application.isPlaying)
+            return;
+
         Handles.color = new Color(108f / 255f, 222f / 255f, 1f);
         Vector3 v = define.transform.localPosition;
 

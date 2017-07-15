@@ -42,7 +42,7 @@ public static class PrefabUtils
 	}
 
 
-	public static void destroyAllChild(GameObject parent)
+	public static void DestroyAllChild(GameObject parent)
 	{
 		destroyAllChild(parent, null);
 	}

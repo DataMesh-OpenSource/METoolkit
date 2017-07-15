@@ -2,18 +2,48 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Networking;
 using MEHoloClient.Sync;
 using MEHoloClient.Utils;
+using MEHoloClient.UDP;
 using DataMesh.AR;
 using DataMesh.AR.Anchor;
 using DataMesh.AR.Interactive;
+using DataMesh.AR.Utility;
+using DataMesh.AR.Log;
 using System.Runtime.InteropServices;
+using System;
 //using System.Diagnostics;
 
 namespace DataMesh.AR.SpectatorView
 {
     public class LiveController : MEHoloModuleSingleton<LiveController>
     {
+
+        /// <summary>
+        /// 监听的端口，用于与配套的Hololens上的SpectatorView应用1沟通 
+        /// </summary>
+        public int listenPort = 8099;
+
+        /// <summary>
+        /// 是否开启UDP传输
+        /// </summary>
+        public bool useUDP = true;
+
+        /// <summary>
+        /// 如果开启UDP传输，监听的UDP端口
+        /// </summary>
+        public int listenPortUDP = 8098;
+
+        /// <summary>
+        /// 视频和图片输出文件夹路径 
+        /// </summary>
+        public System.String outputPath;
+
+        public System.Action cbStartMoveAnchor;
+        public System.Action cbEndMoveAnchor;
+
+
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
         #region DLLImports
         [DllImport("UnityCompositorInterface")]
@@ -76,29 +106,24 @@ namespace DataMesh.AR.SpectatorView
         [DllImport("UnityCompositorInterface")]
         private static extern bool QueueingHoloFrames();
         #endregion
-#endif
-        /// <summary>
-        /// 监听的端口，用于与配套的Hololens上的SpectatorView应用1沟通 
-        /// </summary>
-        public int listenPort;
+
+        [HideInInspector]
+        public LiveWDPController wdpController;
+
 
         /// <summary>
-        /// 视频和图片输出文件夹路径 
+        /// UI所用到的Prefab
         /// </summary>
-        public System.String outputPath;
+        public GameObject uiPrefab;
 
         /// <summary>
-        /// 拍摄所使用的摄像机
+        /// Live拍摄所使用的摄像机的Prefab
         /// </summary>
-        public Camera bevCamera;
+        public GameObject holoCameraPrefab;
 
-        /// <summary>
-        /// 操作面板
-        /// </summary>
-        public LiveControllerPanel panel;
+        [HideInInspector]
+        public LiveControllerUI liveUI;
 
-        public System.Action cbStartMoveAnchor;
-        public System.Action cbEndMoveAnchor;
 
         private IRecordNamerGenerator nameGenerator = new RecordNameGeneratorDefault();
         private string currentName;
@@ -117,69 +142,57 @@ namespace DataMesh.AR.SpectatorView
         [HideInInspector]
         public bool waiting = false;
         [HideInInspector]
-        public string waitingString = null;
-        [HideInInspector]
         public bool anchorLocated = true;
 
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
+        private float waitingStringShowTime = 0;
+        private const float WAIT_STRING_DISAPPEAR_INTERVAL = 5f;
+        private string _waitingString = null;
+        public string waitingString
+        {
+            get { return _waitingString; }
+            set
+            {
+                _waitingString = value;
+                waitingStringShowTime = Time.realtimeSinceStartup;
+            }
+        }
+
         private SyncServer server;
         private LiveServerHandler handler;
-#endif
+        private UdpListener udpListener;
 
-        public HolographicCameraManager holoCamera;
+        [HideInInspector]
+        public HolographicCameraManager holoCamera = null;
 
         private SceneAnchorController anchorController;
         private MultiInputManager inputManager;
 
         private float lastSyncTime = 0;
         private float syncTimeoutInterval = 0.6f;
+        private int lastSyncIndex = int.MinValue;
+
+        private LinkedList<LiveMessageSynchronizeAll> syncMsgList = new LinkedList<LiveMessageSynchronizeAll>();
 
         private int oldCameraMask;
 
         [HideInInspector]
         public short spectatorViewVersion = -1;
 
-        private float _alpha = 0.9f;
-        public float alpha
-        {
-            get { return _alpha; }
-            set
-            {
-                _alpha = value;
+        //public float syncDelayTime = 0.2f;
 
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-                SetAlpha(_alpha);
-                /*
-                if (holoCamera != null &&
-                    holoCamera.shaderManager != null &&
-                    holoCamera.shaderManager.colorTexture != null &&
-                    holoCamera.shaderManager.renderTexture != null &&
-                    holoCamera.shaderManager.holoTexture != null &&
-                    holoCamera.shaderManager.alphaBlendVideoMat != null &&
-                    holoCamera.shaderManager.alphaBlendOutputMat != null &&
-                    holoCamera.shaderManager.alphaBlendPreviewMat != null)
-                {
-                    holoCamera.shaderManager.alphaBlendVideoMat.SetFloat("_Alpha", _alpha);
-                    holoCamera.shaderManager.alphaBlendOutputMat.SetFloat("_Alpha", _alpha);
-                    holoCamera.shaderManager.alphaBlendPreviewMat.SetFloat("_Alpha", _alpha);
-                }
-                */
-#endif
-            }
-        }
-        private float _frameOffset = 0.8f;
-        public float frameOffset
-        {
-            get { return _frameOffset; }
-            set
-            {
-                _frameOffset = value;
+        private float saveAnchorInterval = 1f;
+        private float lastSaveAnchorTime = 0;
+        private string saveAnchorFileName = "AnchorAndCamera.sav";
+        [HideInInspector]
+        public bool saveAnchorDirty = false;
 
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-                SetFrameOffset(_frameOffset);
-#endif
-            }
-        }
+        private LogManager logManager;
+        private int currentLogIndex = 0;
+        private string currentLogName = null;
+
+        private float lastSaveParamTime;
+        private const float saveParamInterval = 1.0f;
+
 
         protected override void Awake()
         {
@@ -190,58 +203,98 @@ namespace DataMesh.AR.SpectatorView
 
         protected override void _Init()
         {
+            mainCamera = Camera.main;
+
             mainCameraTransform = Camera.main.transform;
             anchorController = SceneAnchorController.Instance;
             inputManager = MultiInputManager.Instance;
+            wdpController = LiveWDPController.Instance;
 
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-            panel.Init(this, (float)GetFrameWidth() / (float)GetFrameHeight());
-#endif
+            // 如果Live激活，则自动启动 
+            AutoTurnOn = MEHoloConstant.IsLiveActive;
         }
+
+
 
 
 
         protected override void _TurnOn()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
+            // 加载Live配置文件
+            AppConfig config = AppConfig.Instance;
+            config.LoadConfig(MEHoloConstant.LiveConfigFile);
+            listenPort = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Live_Port", "8099"));
+            listenPortUDP = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Live_Port_UDP", "8098"));
+            useUDP = bool.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Use_UDP", "TRUE"));
 
-            holoCamera.Init();
+            // 读取参数设置 
+            if (!LiveParam.LoadParam())
+            {
+                LiveParam.SoundVolume = AudioListener.volume;
+                LiveParam.SaveParam();
+            }
+
+            // 读取本地位置存储文件 
+            LoadTransformByFile();
+
+            // 初始化并启动UI 
+            GameObject uiObj = PrefabUtils.CreateGameObjectToParent(this.gameObject, uiPrefab);
+            liveUI = uiObj.GetComponent<LiveControllerUI>();
+            liveUI.Init(this, (float)GetFrameWidth() / (float)GetFrameHeight());
+            liveUI.TurnOn();
+
+            // 初始化Windows device protocal
+            wdpController.Init(this, liveUI);
 
 
-            
+            // 启动Lilve摄像机 
+            GameObject cameraObj = PrefabUtils.CreateGameObjectToParent(this.gameObject, holoCameraPrefab);
+            holoCamera = cameraObj.GetComponent<HolographicCameraManager>();
+
+            // 延迟启动全息摄影机 
+            StartCoroutine(StartHoloCamera());
 
 
-            //gameObject.SetActive(true);
-
-            // 启动面板 
-            panel.TurnOn();
+            // Log
+            logManager = LogManager.Instance;
 
             // 关闭主摄影机的显示 
-            mainCamera = Camera.main;
             oldCameraMask = mainCamera.cullingMask;
             //mainCamera.cullingMask = 0;
 
 
-            // 设置参数 
-            //holoCamera.frameProviderInitialized = false;
-            alpha = alpha;
-            frameOffset = frameOffset;
-
-            StartCoroutine(StartHoloCamera());
-
+            // 停止input操作
             /*
             if (inputManager != null)
             {
                 inputManager.StopCapture();
             }
             */
-#endif
+
         }
+
+
+        private void StratLog()
+        {
+            currentLogIndex = UnityEngine.Random.Range(0, 99999);
+            currentLogName = "ReceiveSync_" + currentLogIndex;
+        }
+
+        private void StopLog()
+        {
+            if (currentLogName != null)
+            {
+                logManager.StopLog(currentLogName);
+                currentLogName = null;
+            }
+        }
+
 
         private IEnumerator StartHoloCamera()
         {
             yield return new WaitForSecondsRealtime(1);
-            bevCamera.gameObject.SetActive(true);
+            holoCamera.Init();
+            holoCamera.gameObject.SetActive(true);
 
         }
 
@@ -252,28 +305,34 @@ namespace DataMesh.AR.SpectatorView
 
         public void StartHololensServer()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-            handler = new LiveServerHandler();
             server = new SyncServer(listenPort);
-            server.AddHandler<LiveServerHandler>(LiveConstant.BevServerHandlerName, () => handler);
+            server.AddHandler<LiveServerHandler>(MEHoloConstant.LiveServerHandlerName);
+
             server.StartServer();
-            handler.cbOpen = OnServerOpen;
-            handler.cbClose = OnServerClose;
+            LiveServerHandler.cbOpen = OnServerOpen;
+            LiveServerHandler.cbClose = OnServerClose;
             Debug.Log("Begin listen to " + listenPort);
-#endif
+
+            if (useUDP)
+            {
+                udpListener = new UdpListener(listenPortUDP, UdpMode.Unicast, null, 2);
+                udpListener.StartListen();
+                Debug.Log("Begin listen UDP to " + listenPortUDP);
+            }
+
+            wdpController.TurnOn();
         }
 
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
         public void StopHololesServer()
         {
-            if (handler != null)
-            {
-                handler.cbClose = null;
-                handler.cbClose = null;
-            }
             if (server != null)
                 server.Stop();
+            server = null;
+
+            if (udpListener != null)
+                udpListener.Dispose();
+            udpListener = null;
         }
 
         protected override void OnDestroy()
@@ -282,7 +341,7 @@ namespace DataMesh.AR.SpectatorView
 
             StopHololesServer();
         }
-#endif
+
         /// <summary>
         /// 注册一个视频的命名器
         /// </summary>
@@ -301,88 +360,149 @@ namespace DataMesh.AR.SpectatorView
             listenerList.Add(listener);
         }
 
-        private void OnServerOpen()
+        private void OnServerOpen(LiveServerHandler liveHandler)
         {
             hololensConnected = true;
+            handler = liveHandler;
         }
 
-        private void OnServerClose()
+        private void OnServerClose(LiveServerHandler liveHandler)
         {
+            if (liveHandler != handler)
+                return;
+
             hololensConnected = false;
+            hololensHasInit = false;
+            handler = null;
+
+            StopLog();
         }
 
         // Update is called once per frame
         void Update()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
+            CheckPerformence();
+
+            CheckSyncTransform();
+
+            CheckAnchorSave();
+
+            CheckUI();
+
+            CheckParam();
+
+            CheckMessage();
+        }
+
+        private void CheckPerformence()
+        {
+            /*
+            System.Diagnostics.PerformanceCounter cpuPerformanceCounter = new System.Diagnostics.PerformanceCounter();
+            cpuPerformanceCounter.CategoryName = "Processor";
+            cpuPerformanceCounter.CounterName = "% Processor Time";
+            cpuPerformanceCounter.InstanceName = "_Total";
+            for (int i = 0;i < 4;i ++)
+                Debug.Log("Cpu[" + i + "]--->" + cpuPerformanceCounter.NextValue());
+            */
+        }
+
+        private void CheckParam()
+        {
+            float realTime = Time.realtimeSinceStartup;
+            if (LiveParam.IsDirty && realTime - lastSaveParamTime > saveParamInterval)
+            {
+                LiveParam.SaveParam();
+                lastSaveParamTime = realTime;
+            }
+        }
+
+        void OnApplicationQuit()
+        {
+            if (logManager != null)
+            {
+                logManager.Clear();   
+            }
+        }
+
+        private void CheckUI()
+        {
+            float realTime = Time.realtimeSinceStartup;
+
+            if (realTime > waitingStringShowTime + WAIT_STRING_DISAPPEAR_INTERVAL)
+            {
+                _waitingString = null;
+            }
+        }
+
+        private void DealSyncMessage(LiveMessageSynchronizeAll syncMsg)
+        {
+            if (!hololensHasInit)
+            {
+                // 这时的消息很可能是不对的！不能直接设置 
+
+                // 告诉hololens不要发了 
+                SetHololensSynchronize(false);
+
+                return;
+            }
+
+            float realTime = Time.realtimeSinceStartup;
+            syncMsg.receiveTime = realTime;
+
+            // 记录Log
+            logManager.Log(currentLogName, syncMsg.FormatLogString());
+
+            // 过滤过期消息 
+            if (syncMsg.seq > lastSyncIndex)
+            {
+                lastSyncIndex = syncMsg.seq;
+
+                // 加入待处理队列 
+                syncMsgList.AddLast(syncMsg);
+
+                // 重设一下状态 
+                lastSyncTime = Time.time;
+                hololensStartSynchronize = true;
+
+
+            }
+        }
+
+
+
+
+        private void CheckMessage()
+        {
+            float realTime = Time.realtimeSinceStartup;
+
             if (server != null)
             {
+                //Debug.Log("Server Listening? " + server.IsListening);
                 if (hololensConnected && !hololensHasInit && !waiting)
                 {
                     // 如果连上了，就开始初始化 
                     SetHololensSynchronize(false);
                     SetAnchorToHololens(true);
+
+                    // 这时需要把传输序列号清空，避免新接入的Hololens的同步消息被忽略 
+                    lastSyncIndex = int.MinValue;
                 }
 
-                while (handler.SyncQueue.GetCount() > 0)
+                while (SyncServer.SyncQueue.GetCount() > 0)
                 {
-                    byte[] messageBytes = handler.SyncQueue.Dequeue();
+                    byte[] messageBytes = SyncServer.SyncQueue.Dequeue();
                     //Debug.Log("receive [" + messageBytes.Length + "] type=" + messageBytes[0]);
-
-                    /*
-                    string str = "";
-                    for (int i = 0; i < messageBytes.Length; i++)
-                    {
-                        str += messageBytes[i] + ",";
-                    }
-                    Debug.Log(str);
-                    */
-
 
                     // 处理消息 
                     LiveMessage msg = LiveMessageManager.ParseMessage(messageBytes);
-
-
 
                     switch (msg.type)
                     {
                         case LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_ALL:
                             LiveMessageSynchronizeAll syncMsg = msg as LiveMessageSynchronizeAll;
 
-                            if (!hololensHasInit)
-                            {
-                                // 这时的消息很可能是不对的！不能直接设置 
+                            DealSyncMessage(syncMsg);
 
-                                // 告诉hololens不要发了 
-                                SetHololensSynchronize(false);
-
-                                continue;
-                            }
-
-                            mainCameraTransform.position = syncMsg.position;
-                            mainCameraTransform.eulerAngles = syncMsg.rotation;
-
-                            anchorLocated = true;
-                            for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
-                            {
-                                if (i >= syncMsg.anchorCount)
-                                    continue;
-
-                                AnchorObjectInfo info = anchorController.anchorObjectList[i];
-                                info.rootObject.transform.position = syncMsg.anchorPositionList[i];
-                                info.rootObject.transform.eulerAngles = syncMsg.anchorRotationList[i];
-                                //info.mark.followRoot = true;
-                                //info.FollowRootObject();
-
-                                if (!syncMsg.anchorIsLocated[i])
-                                    anchorLocated = false;
-
-                                //Debug.Log(" --->Set Anchor [" + info.anchorName + "] to " + syncMsg.anchorPositionList[i] + " | " + syncMsg.anchorRotationList[i]);
-                            }
-
-                            // 重设一下状态 
-                            lastSyncTime = Time.time;
-                            hololensStartSynchronize = true;
                             break;
 
                         case LiveMessageConstant.BEV_MESSAGE_TYPE_DOWNLOAD_ANCHOR_FINISH:
@@ -397,13 +517,14 @@ namespace DataMesh.AR.SpectatorView
                                 waitingString = downloadFinishMsg.result.errorString;
                             }
                             break;
+
                         case LiveMessageConstant.BEV_MESSAGE_TYPE_SET_ANCHOR_FINISH:
                             LiveMessageSetAnchorFinish anchorFinishMsg = msg as LiveMessageSetAnchorFinish;
                             spectatorViewVersion = anchorFinishMsg.version;
                             if (spectatorViewVersion < LiveHololens.version)
                             {
                                 // SpectatorView版本太低！ 
-                                panel.ShowInfoDialog("Spectator View's verion is too old!");
+                                liveUI.ShowInfoDialog("Spectator View's verion is too old!");
                                 hololensConnected = false;
                                 StopHololesServer();
                             }
@@ -414,6 +535,30 @@ namespace DataMesh.AR.SpectatorView
 
                             // 初始化完成，就先开启位置传输 
                             SetHololensSynchronize(true);
+                            break;
+
+                        case LiveMessageConstant.BEV_MESSAGE_TYPE_SAVE_ANCHOR_FINISH:
+                            LiveMessageSaveAnchorFinish savehMsg = msg as LiveMessageSaveAnchorFinish;
+
+                            waiting = false;
+                            if (savehMsg.result.success)
+                            {
+                                waitingString = "Save Anchor OK!";
+
+                                // 初始化完成，就先开启位置传输 
+                                // 此功能先取消，因为产生了许多误解
+                                //SetHololensSynchronize(true);
+                            }
+                            else
+                            {
+                                waitingString = savehMsg.result.errorString;
+
+                            }
+                            break;
+
+                        case LiveMessageConstant.BEV_MESSAGE_TYPE_RESPONSE_SPATIAL_MAPPING:
+                            LiveMessageResponseSpatialMapping spatialMsg = msg as LiveMessageResponseSpatialMapping;
+                            SetSpatialMapping(spatialMsg);
                             break;
                     }
 
@@ -428,29 +573,184 @@ namespace DataMesh.AR.SpectatorView
                     }
                 }
             }
-#endif
+
+            if (useUDP && udpListener != null)
+            {
+                while (udpListener.UdpReceiveQueue.GetCount() > 0)
+                {
+                    byte[] messageBytes = udpListener.UdpReceiveQueue.Dequeue();
+                    //Debug.Log(messageBytes.Length + "---" + messageBytes[0]);
+                    LiveMessage msg = LiveMessageManager.ParseMessage(messageBytes);
+
+                    if (msg == null)
+                        continue;
+
+                    switch (msg.type)
+                    {
+                        case LiveMessageConstant.BEV_MESSAGE_TYPE_SYNCHRONIZE_ALL:
+                            LiveMessageSynchronizeAll syncMsg = msg as LiveMessageSynchronizeAll;
+                            //Debug.Log("-->"+syncMsg.seq);
+                            DealSyncMessage(syncMsg);
+
+                            break;
+                    }
+                }
+            }
+
+        }
+
+        private Vector3 syncCameraPos = Vector3.zero;
+        private Vector4 syncCameraRotTemp = Vector4.zero;
+        private Quaternion syncCameraRot = Quaternion.identity;
+        private Quaternion syncCameraRotFirst = Quaternion.identity;
+        private Vector3[] syncAnchorPos;
+        private Vector4[] syncAnchorRotTemp;
+        private Quaternion[] syncAnchorRot;
+        private Quaternion[] syncAnchorRotFirst;
+
+        private void InitSyncAnchorData<T>(ref T[] list, int anchorCount)
+        {
+            if (list == null || list.Length != anchorCount)
+            {
+                list = new T[anchorCount];
+            }
+            for (int i = 0;i < list.Length;i ++)
+            {
+                list[i] = default(T);
+            }
+        }
+
+        private void CountOneSyncMessage(ref int count, LiveMessageSynchronizeAll syncMsg)
+        {
+            // 求取平均值 
+            count++;
+
+            syncCameraPos += syncMsg.position;
+            if (count <= 1)
+            {
+                syncCameraRot = syncMsg.rotation;
+                syncCameraRotFirst = syncCameraRot;
+            }
+            else
+            {
+                syncCameraRot = MathUtility.AverageQuaternion(ref syncCameraRotTemp, syncMsg.rotation, syncCameraRotFirst, count);
+            }
+
+            for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+            {
+                if (i >= syncMsg.anchorCount)
+                    continue;
+
+                syncAnchorPos[i] += syncMsg.anchorPositionList[i];
+
+                if (count <= 1)
+                {
+                    syncAnchorRot[i] = syncMsg.anchorRotationList[i];
+                    syncAnchorRotFirst[i] = syncAnchorRot[i];
+                }
+                else
+                {
+                    Vector4 temp = syncAnchorRotTemp[i];
+                    syncAnchorRot[i] = MathUtility.AverageQuaternion(ref temp, syncMsg.anchorRotationList[i], syncAnchorRotFirst[i], count);
+                    syncAnchorRotTemp[i] = temp;
+                }
+
+                // 只要还有消息表明没能定位，就表示没定位 
+                if (!syncMsg.anchorIsLocated[i])
+                    anchorLocated = false;
+            }
+
+        }
+
+        private void CheckSyncTransform()
+        {
+            if (syncMsgList.Count == 0)
+                return;
+
+            float curTime = Time.realtimeSinceStartup - LiveParam.SyncDelayTime;
+            float timeBefore = curTime + LiveParam.AntiShakeBeforeTime;
+            float timeAfter = curTime + LiveParam.AntiShakeAfterTime;
+
+            LinkedListNode<LiveMessageSynchronizeAll> node = syncMsgList.First;
+
+            syncCameraPos = Vector3.zero;
+            syncCameraRot = Quaternion.identity;
+            syncCameraRotTemp = Vector4.zero;
+
+            int anchorCount = anchorController.anchorObjectList.Count;
+
+            InitSyncAnchorData(ref syncAnchorPos, anchorCount);
+            InitSyncAnchorData(ref syncAnchorRot, anchorCount);
+            InitSyncAnchorData(ref syncAnchorRotFirst, anchorCount);
+            InitSyncAnchorData(ref syncAnchorRotTemp, anchorCount);
+
+            int count = 0;
+            anchorLocated = true;
+            LiveMessageSynchronizeAll lastMsg = null;
+            while (node != null)
+            {
+                LiveMessageSynchronizeAll syncMsg = node.Value;
+                LinkedListNode<LiveMessageSynchronizeAll> removeNode = null;
+                if (syncMsg.receiveTime <= timeBefore)
+                {
+                    lastMsg = syncMsg;
+                    removeNode = node;
+                }
+                else if (syncMsg.receiveTime <= timeAfter)
+                {
+                    CountOneSyncMessage(ref count, syncMsg);
+                }
+
+                node = node.Next;
+                if (removeNode != null)
+                    syncMsgList.Remove(removeNode);
+
+
+            }
+
+            if (count == 0 && lastMsg != null)
+            {
+                // 如果时间窗口内没有任何对象，并且有删除，则取之前删除的最后一个对象 
+                CountOneSyncMessage(ref count, lastMsg);
+            }
+
+            if (count > 0)
+            {
+                mainCameraTransform.position = syncCameraPos / (float)count;
+                mainCameraTransform.rotation = syncCameraRot;
+
+                for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+                {
+                    AnchorObjectInfo info = anchorController.anchorObjectList[i];
+                    info.rootObject.transform.position = syncAnchorPos[i] / (float)count;
+                    info.rootObject.transform.rotation = syncAnchorRot[i];
+
+                    //Debug.Log(" --->Set Anchor [" + info.anchorName + "] to " + syncMsg.anchorPositionList[i] + " | " + syncMsg.anchorRotationList[i]);
+                }
+
+            }
+
+            saveAnchorDirty = true;
+
         }
 
         public void SetHololensSynchronize(bool b)
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
             if (server == null)
                 return;
 
             if (b)
             {
-                LiveMessage msg = new LiveMessage();
-
-                Debug.Log("send!");
-                msg.type = LiveMessageConstant.BEV_MESSAGE_TYPE_START;
-                handler.SendMessage(msg.Serialize(), null);
+                LiveMessageStart msg = new LiveMessageStart();
+                if (handler != null)
+                    handler.SendMessage(msg.Serialize(), null);
             }
             else
             {
-                LiveMessage msg = new LiveMessage();
-                msg.type = LiveMessageConstant.BEV_MESSAGE_TYPE_STOP;
-                handler.SendMessage(msg.Serialize(), null);
+                LiveMessageStop msg = new LiveMessageStop();
+                if (handler != null)
+                    handler.SendMessage(msg.Serialize(), null);
             }
 
             if (b)
@@ -462,7 +762,6 @@ namespace DataMesh.AR.SpectatorView
             {
                 mainCamera.cullingMask = oldCameraMask;
             }
-#endif
         }
 
         /// <summary>
@@ -470,32 +769,36 @@ namespace DataMesh.AR.SpectatorView
         /// </summary>
         public void SetAnchorToHololens(bool isInit)
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
             if (!hololensConnected)
                 return;
 
+            StratLog();
+
             LiveMessageSetAnchor msg = new LiveMessageSetAnchor();
-            msg.type = LiveMessageConstant.BEV_MESSAGE_TYPE_SET_ANCHOR;
             msg.anchorData = new LiveMessageSetAnchor.LiveMessageSetAnchorData();
             msg.anchorData.serverHost = anchorController.serverHost;
             msg.anchorData.serverPort = anchorController.serverPort;
             msg.anchorData.appId = anchorController.appId;
             msg.anchorData.roomId = anchorController.roomId;
-            msg.anchorData.isInit = isInit;
+            msg.anchorData.useUDP = this.useUDP;
+            msg.anchorData.serverPortUDP = this.listenPortUDP;
+            msg.anchorData.sendRotation = true;
+            msg.anchorData.logIndex = currentLogIndex;
 
             for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
                 msg.anchorData.anchorNameList.Add(info.anchorName);
                 msg.anchorData.anchorPosition.Add(info.rootObject.transform.position);
-                msg.anchorData.anchorForward.Add(info.rootObject.transform.forward);
+                msg.anchorData.anchorForward.Add(info.rootObject.transform.eulerAngles);
             }
 
-            handler.SendMessage(msg.Serialize(), null);
+            Debug.Log("Send Set Anchor msg type=" + msg.type);
+            if (handler != null)
+                handler.SendMessage(msg.Serialize(), null);
             waiting = true;
             waitingString = "Waiting for anchor init...";
-#endif
         }
 
         /// <summary>
@@ -503,50 +806,72 @@ namespace DataMesh.AR.SpectatorView
         /// </summary>
         public void SaveAnchorToHololens()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
             if (!hololensConnected)
                 return;
 
             LiveMessageSaveAnchor msg = new LiveMessageSaveAnchor();
-            msg.type = LiveMessageConstant.BEV_MESSAGE_TYPE_SET_ANCHOR;
             msg.anchorData = new LiveMessageSaveAnchor.LiveMessageSetAnchorData();
-            msg.anchorData.serverHost = anchorController.serverHost;
-            msg.anchorData.serverPort = anchorController.serverPort;
-            msg.anchorData.appId = anchorController.appId;
-            msg.anchorData.roomId = anchorController.roomId;
+            msg.anchorData.sendRotation = true;
 
             for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
                 msg.anchorData.anchorNameList.Add(info.anchorName);
                 msg.anchorData.anchorPosition.Add(info.rootObject.transform.position);
-                msg.anchorData.anchorForward.Add(info.rootObject.transform.forward);
+                msg.anchorData.anchorForward.Add(info.rootObject.transform.eulerAngles);
             }
 
-            handler.SendMessage(msg.Serialize(), null);
+            Debug.Log("send message type=" + msg.type);
+
+            if (handler != null)
+                handler.SendMessage(msg.Serialize(), null);
             waiting = true;
             waitingString = "Waiting for anchor init...";
-#endif
         }
 
         public void DownloadAnchor()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-            LiveMessage msg = new LiveMessage();
-            msg.type = LiveMessageConstant.BEV_MESSAGE_TYPE_DOWNLOAD_ANCHOR;
-            handler.SendMessage(msg.Serialize(), null);
+            LiveMessageDownload msg = new LiveMessageDownload();
+            if (handler != null)
+                handler.SendMessage(msg.Serialize(), null);
             waiting = true;
             waitingString = "Waiting for download anchors...";
-#endif
         }
+
+        public void DownloadSpatial()
+        {
+            LiveMessageRequestSpatialMapping msg = new LiveMessageRequestSpatialMapping();
+                if (handler != null)
+            handler.SendMessage(msg.Serialize(), null);
+            waiting = true;
+            waitingString = "Download spatial mapping...";
+        }
+
+
+        public void SetSpatialMapping(LiveMessageResponseSpatialMapping msg)
+        {
+            Debug.Log("Receive Spatial Mapping! len=" + msg.mapData);
+
+            List<Mesh> meshes = SimpleMeshSerializer.Deserialize(msg.mapData) as List<Mesh>;
+            anchorController.SetSpatialMeshToObserver(meshes);
+            waiting = false;
+            waitingString = "Download spatial mapping OK!";
+        }
+
 
         public void StartMoveAnchor()
         {
+            //panel.ShowBottomBar(false);
+            liveUI.isModifyAnchor = true;
+
+            // 先停止同步 
+            SetHololensSynchronize(false);
+
             if (cbStartMoveAnchor != null)
                 cbStartMoveAnchor();
 
-            anchorController.cbAnchorControlFinish = AnchorControlFinish;
+            anchorController.AddCallbackFinish(AnchorControlFinish);
             StartCoroutine(StartSceneAnchorController());
         }
 
@@ -558,10 +883,13 @@ namespace DataMesh.AR.SpectatorView
 
         private void AnchorControlFinish()
         {
+            Debug.Log("Anchor Adujst finish!");
             if (inputManager != null)
             {
                 //inputManager.StopCapture();
             }
+
+            anchorController.RemoveCallbackFinish(AnchorControlFinish);
 
             anchorController.TurnOff();
 
@@ -570,12 +898,17 @@ namespace DataMesh.AR.SpectatorView
 
             // 如果hololens存在，发送存储 
             SaveAnchorToHololens();
+
+            // 设置本地存储 
+            saveAnchorDirty = true;
+
+            liveUI.isModifyAnchor = false;
+            //panel.ShowBottomBar(true);
         }
 
 
         public void StartCapture()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
             currentName = nameGenerator.GetName();
             for (int i = 0;i < listenerList.Count;i ++)
             {
@@ -583,12 +916,10 @@ namespace DataMesh.AR.SpectatorView
             }
             //StartRecording();
             StartRecordingMe(outputPath, currentName + ".mp4");
-#endif
         }
 
         public void StopCapture()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
             StopRecording();
             //Debug.Log("[" + index + "] Record Finish！");
 
@@ -597,15 +928,162 @@ namespace DataMesh.AR.SpectatorView
                 listenerList[i].OnRecordStop(outputPath, currentName);
             }
 
-#endif
         }
 
         public void TakeSnap()
         {
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
             TakePictureMe(outputPath, nameGenerator.GetName() + ".png");
-#endif
         }
 
+
+
+        /// <summary>
+        /// 从文件中读取所有Anchor和主摄像机的位置 
+        /// </summary>
+        public void LoadTransformByFile()
+        {
+            string path = GetSavePath();
+
+            Dictionary<string, string> data = AppConfig.AnalyseConfigFile(path);
+            if (data != null)
+            {
+                Vector3 v;
+                if (data.ContainsKey("CameraPos"))
+                {
+                    if (FillVectorFromString(data["CameraPos"], out v))
+                    {
+                        mainCamera.transform.position = v;
+                    }
+                }
+                if (data.ContainsKey("CameraRot"))
+                {
+                    if (FillVectorFromString(data["CameraRot"], out v))
+                    {
+                        mainCamera.transform.eulerAngles = v;
+                    }
+                }
+
+                for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+                {
+                    AnchorObjectInfo info = anchorController.anchorObjectList[i];
+
+                    if (data.ContainsKey("[" + info.anchorName + "]pos"))
+                    {
+                        if (FillVectorFromString(data["[" + info.anchorName + "]pos"], out v))
+                        {
+                            info.SetPosition(v);
+                        }
+                    }
+
+                    if (data.ContainsKey("[" + info.anchorName + "]rot"))
+                    {
+                        if (FillVectorFromString(data["[" + info.anchorName + "]rot"], out v))
+                        {
+                            info.SetEular(v);
+                        }
+                    }
+
+                }
+            }
+            else
+            {
+                Debug.Log("Can not fild Anchor save file.");
+            }
+
+        }
+
+
+        /// <summary>
+        /// 存储所有Anchor以及主摄像机的位置到文件之中 
+        /// </summary>
+        public void SaveTransformToFile()
+        {
+            string path = GetSavePath();
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data.Add("CameraPos", GetVectorString(mainCamera.transform.position));
+            data.Add("CameraRot", GetVectorString(mainCamera.transform.eulerAngles));
+
+            for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+            {
+                AnchorObjectInfo info = anchorController.anchorObjectList[i];
+
+                data.Add("[" + info.anchorName + "]pos", GetVectorString(info.rootObject.transform.position));
+                data.Add("[" + info.anchorName + "]rot", GetVectorString(info.rootObject.transform.eulerAngles));
+
+            }
+
+            //Debug.Log("Save Anchor file [" + path + "]");
+            AppConfig.SaveConfigFile(path, data);
+        }
+
+        private string GetVectorString(Vector3 v)
+        {
+            return v.x + "," + v.y + "," + v.z;
+
+        }
+
+        private bool FillVectorFromString(string s, out Vector3 v)
+        {
+            v = new Vector3();
+
+            string[] args = s.Split(',');
+            if (args.Length != 3)
+                return false;
+
+            try
+            {
+                v.x = float.Parse(args[0]);
+                v.y = float.Parse(args[1]);
+                v.z = float.Parse(args[2]);
+            }
+            catch (System.Exception e)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private void CheckAnchorSave()
+        {
+            if (saveAnchorDirty)
+            {
+                float curTime = Time.realtimeSinceStartup;
+                if (curTime - lastSaveAnchorTime > saveAnchorInterval)
+                {
+                    SaveTransformToFile();
+                    lastSaveAnchorTime = curTime;
+                    saveAnchorDirty = false;
+                }
+            }
+        }
+
+        public string GetSavePath()
+        {
+            return Application.dataPath + "/../SaveData/" + saveAnchorFileName;
+        }
+#else
+        // 仅实现空接口 
+        protected override void _Init()
+        {
+            
+        }
+        // 仅实现空接口 
+        protected override void _TurnOn()
+        {
+            
+        }
+        // 仅实现空接口 
+        protected override void _TurnOff()
+        {
+            
+        }
+        // 仅实现空接口 
+        public void AddLiveListener(ILiveListener listener)
+        {
+        }
+#endif
     }
 }

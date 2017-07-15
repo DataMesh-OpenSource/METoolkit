@@ -7,10 +7,10 @@ using MEHoloClient.Utils;
 namespace DataMesh.AR.UI
 {
 
-    public class BlockMenuManager : DataMesh.AR.MEHoloModuleSingleton<BlockMenuManager>
+    public class BlockMenuManager : MonoBehaviour
     {
         /// <summary>
-        /// 所有面板数据的存储列表 
+        /// 预设的面板数据 
         /// </summary>
         public List<TextAsset> menuDataList;
 
@@ -30,22 +30,14 @@ namespace DataMesh.AR.UI
 
         private Dictionary<string, BlockMenu> menuDic = new Dictionary<string, BlockMenu>();
 
-        protected override void Awake()
-        {
-            base.Awake();
-        }
+        private bool hasTurnOn = false;
 
-        protected override void _Init()
+
+        public void Init()
         {
             for (int i = 0; i < menuDataList.Count; i++)
             {
                 string str = menuDataList[i].text;
-                //Debug.Log(str);
-
-                //BlockMenuData data = JsonReader.Deserialize<BlockMenuData>(str);
-                //BlockMenuData data = new BlockMenuData();
-                //JSONObject jsonObj = new JSONObject(str);
-                //data.parseJsonObject(jsonObj);
 
                 BlockMenuData data = JsonUtil.Deserialize<BlockMenuData>(str);
 
@@ -53,24 +45,31 @@ namespace DataMesh.AR.UI
             }
         }
 
-        protected override void _TurnOn()
+        public void TurnOn()
         {
-
+            hasTurnOn = true;
         }
 
-        protected override void _TurnOff()
+        public void TurnOff()
         {
-            
+            hasTurnOn = false;
         }
 
-        private void CreateMenu(BlockMenuData data)
+
+
+        /// <summary>
+        /// 用数据创建一个面板 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool CreateMenu(BlockMenuData data)
         {
 
             if (menuDic.ContainsKey(data.name))
             {
                 // 已经有重名Menu 
                 Debug.Log("已经存在同名Menu!");
-                return;
+                return false;
             }
 
             GameObject obj = PrefabUtils.CreateGameObjectToParent(null, menuPrefab);
@@ -79,6 +78,8 @@ namespace DataMesh.AR.UI
             menuDic.Add(data.name, menu);
 
             menu.BuildMenu(data);
+
+            return true;
         }
 
         /// <summary>

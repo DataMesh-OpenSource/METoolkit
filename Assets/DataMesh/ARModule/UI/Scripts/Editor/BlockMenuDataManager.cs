@@ -23,7 +23,7 @@ namespace DataMesh.AR.UI
         private string[] names = { "Right Top", "Left Top", "Left Bottom", "Right Bottom" };
 
 
-        [MenuItem("Window/DataMesh/BlockMenuMaker")]
+        [MenuItem("DataMesh/Open Block Menu Maker")]
         static void Init()
         {
             // Get existing open window or if none, make a new one:
