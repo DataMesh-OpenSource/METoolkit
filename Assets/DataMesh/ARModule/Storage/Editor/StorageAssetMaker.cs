@@ -6,8 +6,10 @@ using System.IO;
 
 namespace DataMesh.AR.Storage
 {
+
     public static class StorageAssetMaker
     {
+
         [MenuItem("Assets/DataMesh/Build Storage Asset (PC and WSA)")]
         public static void MakeAsset()
         {

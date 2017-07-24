@@ -113,7 +113,7 @@ namespace DataMesh.AR.SpectatorView
         private void OnStopCapture(GameObject go)
         {
             isRecoding = false;
-            liveUI.OnStartCapture();
+            liveUI.OnStopCapture();
         }
 
         public void OnTakeSnap(GameObject go)

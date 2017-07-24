@@ -115,10 +115,11 @@ namespace DataMesh.AR.SpectatorView
 
             if (imageCapture.texture == null)
             {
-                imageCapture.texture = controller.holoCamera.shaderManager.colorTexture;
+                //imageCapture.texture = controller.holoCamera.shaderManager.colorTexture;
                 imageCapture.material = controller.holoCamera.shaderManager.alphaBlendPreviewMat;
             }
 
+            /*
             if (controller.holoCamera != null &&
                 controller.holoCamera.shaderManager != null &&
                 controller.holoCamera.shaderManager.colorTexture != null &&
@@ -165,6 +166,7 @@ namespace DataMesh.AR.SpectatorView
                 }
 
             }
+            */
             
         }
         public void OnPointerClick(PointerEventData eventData)

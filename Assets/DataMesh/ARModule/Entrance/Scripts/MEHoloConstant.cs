@@ -14,6 +14,8 @@ namespace DataMesh.AR
 
         public const string CalibrationConfigFile = "MEConfigCalibration.ini";
 
+        public const string LiveAgentConfigFile = "MEConfigLiveAgent.ini";
+
 #if ME_LIVE_ACTIVE
         public const bool IsLiveActive = true;
 #else

@@ -21,7 +21,6 @@ GameObject:
   - component: {fileID: 4904362886302602}
   - component: {fileID: 20728211579406102}
   - component: {fileID: 114215845314536282}
-  - component: {fileID: 114641169352538984}
   m_Layer: 0
   m_Name: HolographicCameraManager
   m_TagString: Untagged
@@ -148,26 +147,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1370177770730168}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9186b604205a50e47a9647cd566e4bb4, type: 3}
+  m_Script: {fileID: 431489732, guid: b2a3c7d91f94654428e52a57bffa0521, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TextureDepth: 16
-  AntiAliasing: 4
-  Filter: 1
+  TextureDepth: 24
+  AntiAliasing: 8
+  Filter: 2
   frameProviderInitialized: 0
   shaderManager: {fileID: 0}
-  calibration: {fileID: 0}
   requestSpatialMappingData: 0
---- !u!114 &114641169352538984
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1370177770730168}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19605d25c0572d7498ac8b8eb983b759, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  positionOffset: {x: 0, y: 0, z: 0}
-  rotationOffset: {x: 0, y: 0, z: 0}
+  logoTex: {fileID: 0}

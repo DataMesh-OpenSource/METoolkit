@@ -26,7 +26,7 @@ namespace DataMesh.AR.SpectatorView
         }
 
         [HideInInspector]
-        public const string SpectatorViewAppName = "SpectatorView";
+        public const string SpectatorViewAppName = "DataMeshLiveAgent";
 
         private string networkInfo;
 

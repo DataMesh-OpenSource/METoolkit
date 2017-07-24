@@ -114,13 +114,13 @@ namespace DataMesh.AR.SpectatorView
         public void OnStartCapture()
         {
             liveController.StartCapture();
-            livePreview.SetFullScreen(true);
+            //livePreview.SetFullScreen(true);
         }
 
         public void OnStopCapture()
         {
             liveController.StopCapture();
-            livePreview.SetFullScreen(false);
+            //livePreview.SetFullScreen(false);
         }
 
         public void OnFullScreen()

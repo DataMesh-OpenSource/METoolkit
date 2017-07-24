@@ -8,6 +8,7 @@ using MEHoloClient.Interface.Sync;
 using MEHoloClient.Utils;
 using MEHoloClient.UDP;
 using DataMesh.AR.Anchor;
+using DataMesh.AR.Utility;
 using System;
 
 #if  UNITY_METRO && !UNITY_EDITOR
@@ -56,6 +57,10 @@ namespace DataMesh.AR.SpectatorView
         private Log.LogManager logManager;
         private string currentLogName;
 
+        private int count = 0;
+        private string logStr = "";
+
+
         /// <summary>
         /// 初始化
         /// </summary>
@@ -63,6 +68,9 @@ namespace DataMesh.AR.SpectatorView
         {
             anchorController = SceneAnchorController.Instance;
             mainCameraTransform = Camera.main.transform;
+
+            logManager = Log.LogManager.Instance;
+
         }
 
         /// <summary>
@@ -70,7 +78,15 @@ namespace DataMesh.AR.SpectatorView
         /// </summary>
         protected override void _TurnOn()
         {
-         
+            // 加载配置文件
+            Debug.Log("config source=" + AppConfig.Instance.configFileSourcePath);
+            Debug.Log("config target=" + AppConfig.Instance.configFilePath);
+            Debug.Log("Load config file " + MEHoloConstant.LiveAgentConfigFile);
+            AppConfig.Instance.LoadConfig(MEHoloConstant.LiveAgentConfigFile);
+            liveIp = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveAgentConfigFile, "Live_Ip");
+            livePort = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveAgentConfigFile, "Live_Port"));
+
+            // 连接WorkStation
             socketUrl = "ws://" + liveIp + ":" + livePort + MEHoloConstant.LiveServerHandlerName;
 
             syncClient = new SyncClient(socketUrl, true, 100);
@@ -78,7 +94,6 @@ namespace DataMesh.AR.SpectatorView
 
             Debug.Log("start connect: " + socketUrl);
 
-            logManager = Log.LogManager.Instance;
 
             // 关闭其他服务，以节省效能 
             DataMesh.AR.Interactive.MultiInputManager.Instance.StopCapture();

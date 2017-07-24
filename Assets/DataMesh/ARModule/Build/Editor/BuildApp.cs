@@ -8,6 +8,60 @@ using System.Xml.Linq;
 
 public class BuildApp
 {
+
+
+    [MenuItem("Assets/DataMesh/Build Water Mark")]
+    public static void BuildWaterMark()
+    {
+        if (Selection.objects.Length != 1)
+        {
+            Debug.LogError("Please select objects!");
+            return;
+        }
+
+        var sel = Selection.objects[0];
+        if (!(sel is Texture2D))
+        {
+            Debug.LogError("Please select a pic");
+            return;
+        }
+
+        string assetPath = AssetDatabase.GetAssetOrScenePath(sel);
+        Debug.Log(assetPath);
+
+        if (!assetPath.EndsWith(".png"))
+        {
+            Debug.LogError("Please select a PNG file!");
+            return;
+        }
+
+        byte[] bt = File.ReadAllBytes(assetPath);
+
+        Debug.Log("length=" + bt.Length);
+
+        string str = System.Convert.ToBase64String(bt);
+
+        Debug.Log("base64 length=" + str.Length);
+
+        string destFile = assetPath.Substring(0, assetPath.Length - 4);
+        destFile += ".txt";
+        File.WriteAllText(destFile, str);
+
+        Debug.Log("Create Success!");
+    }
+
+    /*
+    [MenuItem("Assets/DataMesh/Test Water Mark")]
+    public static void TestWaterMark()
+    {
+        byte[] waterMarkPic = System.Convert.FromBase64String(DataMesh.AR.SpectatorView.Png.png);
+        Debug.Log(waterMarkPic.Length);
+
+        File.WriteAllBytes(Application.dataPath + "/" + "test.png", waterMarkPic);
+        Debug.Log(Application.dataPath + "/" + "test.png");
+    }
+    */
+
     public static void Test()
     {
         Debug.Log("old:" + EditorUserBuildSettings.GetPlatformSettings("", "metroPackageVersion"));
@@ -160,7 +214,7 @@ public class BuildApp
         // 修改版本号
         if (targetPlatform == "HoloLens" || targetPlatform == "Surface")
         {
-            SetPackageVersion(targetProjetPath, version);
+            SetPackageNameAndVersion(targetProjetPath, appId, version);
         }
     }
 
@@ -191,7 +245,7 @@ public class BuildApp
         return null;
     }
 
-    private static void SetPackageVersion(string projectPath, string version)
+    private static void SetPackageNameAndVersion(string projectPath, string name, string version)
     {
         // Find the manifest, assume the one we want is the first one
         string[] manifests = Directory.GetFiles(projectPath, "Package.appxmanifest", SearchOption.AllDirectories);
@@ -211,6 +265,17 @@ public class BuildApp
             return;
         }
 
+        var nameAttr = identityNode.Attribute(XName.Get("Name"));
+        if (nameAttr == null)
+        {
+            Debug.LogError("Package.appxmanifest for build (in path - " + projectPath + ") is missing a version attribute in the <Identity /> node.");
+        }
+        else
+        {
+            nameAttr.Value = name;
+        }
+
+
         // We use XName.Get instead of string -> XName implicit conversion because
         // when we pass in the string "Version", the program doesn't find the attribute.
         // Best guess as to why this happens is that implicit string conversion doesn't set the namespace to empty
@@ -218,14 +283,16 @@ public class BuildApp
         if (versionAttr == null)
         {
             Debug.LogError("Package.appxmanifest for build (in path - " + projectPath + ") is missing a version attribute in the <Identity /> node.");
-            return;
+        }
+        else
+        {
+            versionAttr.Value = version;
         }
 
         // Assume package version always has a '.'.
         // According to https://msdn.microsoft.com/en-us/library/windows/apps/br211441.aspx
         // Package versions are always of the form Major.Minor.Build.Revision
 
-        versionAttr.Value = version;
         rootNode.Save(manifest);
     }
 

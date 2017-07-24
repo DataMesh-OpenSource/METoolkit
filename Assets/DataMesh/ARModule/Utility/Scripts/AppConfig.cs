@@ -9,8 +9,8 @@ namespace DataMesh.AR.Utility
     {
         protected Dictionary<string, Dictionary<string,string>> dicConfigList = new Dictionary<string, Dictionary<string, string>>();
 
-        private string configFileSourcePath;
-        private string configFilePath;
+        public string configFileSourcePath;
+        public string configFilePath;
 
         private static AppConfig _instance;
 
@@ -22,6 +22,7 @@ namespace DataMesh.AR.Utility
 #else
             configFilePath = configFileSourcePath;
 #endif
+
         }
 
         public static AppConfig Instance

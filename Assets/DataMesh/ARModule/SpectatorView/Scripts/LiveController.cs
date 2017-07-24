@@ -124,6 +124,7 @@ namespace DataMesh.AR.SpectatorView
         [HideInInspector]
         public LiveControllerUI liveUI;
 
+        private string holoServerHost;
 
         private IRecordNamerGenerator nameGenerator = new RecordNameGeneratorDefault();
         private string currentName;
@@ -163,6 +164,8 @@ namespace DataMesh.AR.SpectatorView
 
         [HideInInspector]
         public HolographicCameraManager holoCamera = null;
+        [HideInInspector]
+        public CalibrationManager calibrationManager;
 
         private SceneAnchorController anchorController;
         private MultiInputManager inputManager;
@@ -193,7 +196,6 @@ namespace DataMesh.AR.SpectatorView
         private float lastSaveParamTime;
         private const float saveParamInterval = 1.0f;
 
-
         protected override void Awake()
         {
             base.Awake();
@@ -214,10 +216,6 @@ namespace DataMesh.AR.SpectatorView
             AutoTurnOn = MEHoloConstant.IsLiveActive;
         }
 
-
-
-
-
         protected override void _TurnOn()
         {
             // 加载Live配置文件
@@ -226,6 +224,16 @@ namespace DataMesh.AR.SpectatorView
             listenPort = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Live_Port", "8099"));
             listenPortUDP = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Live_Port_UDP", "8098"));
             useUDP = bool.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Use_UDP", "TRUE"));
+            outputPath = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile,"Out_Put_Path","C:\\HologramCapture");
+
+            config.LoadConfig(MEHoloConstant.CalibrationConfigFile);
+            holoServerHost = config.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
+
+            outputPath = config.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Out_Put_Path", "./");
+            if (!outputPath.EndsWith("/") && !outputPath.EndsWith("\\"))
+            {
+                outputPath += "/";
+            }
 
             // 读取参数设置 
             if (!LiveParam.LoadParam())
@@ -251,9 +259,11 @@ namespace DataMesh.AR.SpectatorView
             GameObject cameraObj = PrefabUtils.CreateGameObjectToParent(this.gameObject, holoCameraPrefab);
             holoCamera = cameraObj.GetComponent<HolographicCameraManager>();
 
+            calibrationManager = holoCamera.gameObject.AddComponent<CalibrationManager>();
+            calibrationManager.Init();
+
             // 延迟启动全息摄影机 
             StartCoroutine(StartHoloCamera());
-
 
             // Log
             logManager = LogManager.Instance;
@@ -262,6 +272,8 @@ namespace DataMesh.AR.SpectatorView
             oldCameraMask = mainCamera.cullingMask;
             //mainCamera.cullingMask = 0;
 
+            // 设置一下frameoffset
+            SetFrameOffset(0.5f);
 
             // 停止input操作
             /*
@@ -270,6 +282,7 @@ namespace DataMesh.AR.SpectatorView
                 inputManager.StopCapture();
             }
             */
+
 
         }
 
@@ -289,12 +302,26 @@ namespace DataMesh.AR.SpectatorView
             }
         }
 
-
         private IEnumerator StartHoloCamera()
         {
             yield return new WaitForSecondsRealtime(1);
-            holoCamera.Init();
+
+            // 添加摄像机跟随组件 
+            Common.FollowMainCamera followMainCamera = holoCamera.gameObject.GetComponent<Common.FollowMainCamera>();
+            if (followMainCamera == null)
+            {
+                followMainCamera = holoCamera.gameObject.AddComponent<Common.FollowMainCamera>();
+            }
+            followMainCamera.positionOffset = calibrationManager.data.Translation;
+            followMainCamera.rotationOffset = calibrationManager.data.Rotation.eulerAngles;
+
+            // 启动 
+            holoCamera.Init(calibrationManager.data, holoServerHost);
+
             holoCamera.gameObject.SetActive(true);
+
+
+
 
         }
 
