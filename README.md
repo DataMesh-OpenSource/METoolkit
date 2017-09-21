@@ -17,7 +17,7 @@ METoolkit consists of nine components for a wide range of functionalities.
 
 ## Documentation
 
-For more detailed documentations for METoolkit, see the [**METoolkit Developer Manual**](http://docs.datamesh.com/projects/me-live/en/latest/metoolkit-manual/).
+For more detailed documentations for METoolkit, see the [**METoolkit Developer Manual**](http://docs.datamesh.com/projects/me-live/en/latest/METoolkit-overview/).
 
 ## License
 
