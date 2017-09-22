@@ -37,6 +37,7 @@ namespace DataMesh.AR.SpectatorView
         float checkBatteryTime = 0;
         float checkBatteryInterval = 30;
 
+        private bool hasTurnOn = false;
 
         private LiveWDPController() { }
 
@@ -49,6 +50,8 @@ namespace DataMesh.AR.SpectatorView
         public void TurnOn()
         {
             panel.spectatorViewHololensPanel.OnOpenStatusPanel(null);
+
+            hasTurnOn = true;
         }
 
         public void OnOpenStatusPanel()
@@ -761,6 +764,9 @@ namespace DataMesh.AR.SpectatorView
         /// </summary>
         void Update()
         {
+            if (!hasTurnOn)
+                return;
+
             float curTime = Time.realtimeSinceStartup;
 
 

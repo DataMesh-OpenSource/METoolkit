@@ -38,7 +38,9 @@ public class MEHoloEntranceEditor : Editor
                 holoRoot = new GameObject("MEHolo");
 
                 InstantiatePrefabToParent(entrance.CommonPrefab, holoRoot.transform);
+#if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
                 InstantiatePrefabToParent(entrance.AnchorPrefab, holoRoot.transform);
+#endif
                 InstantiatePrefabToParent(entrance.InputPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.SpeechPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.UIPerfab, holoRoot.transform);
@@ -97,12 +99,14 @@ public class MEHoloEntranceEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.Space();
 
-
+#if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
         entrance.NeedAnchor = EditorGUILayout.Toggle("If Need Anchor:", entrance.NeedAnchor);
         if (entrance.NeedAnchor)
         {
             entrance.NeedInput = true;
         }
+#endif
+
         entrance.NeedInput = EditorGUILayout.Toggle("If Need Input:", entrance.NeedInput);
         entrance.NeedUI = EditorGUILayout.Toggle("If Need UI:", entrance.NeedUI);
         entrance.NeedCollaboration = EditorGUILayout.Toggle("If Need Collaboration:", entrance.NeedCollaboration);
@@ -113,7 +117,9 @@ public class MEHoloEntranceEditor : Editor
         entrance.NeedLive = EditorGUILayout.Toggle("If Need Live!:", entrance.NeedLive);
         if (entrance.NeedLive)
         {
+#if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
             entrance.NeedAnchor = true;
+#endif
             entrance.NeedInput = true;
         }
 

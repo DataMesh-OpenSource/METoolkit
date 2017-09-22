@@ -441,7 +441,7 @@ namespace DataMesh.AR.Interactive
             if (InteractiveType == InputType.Touch || (InteractiveType == InputType.KeybordAndMouse && !simulateGaze))
             {
                 Vector3 pos;
-                if (InteractiveType == InputType.Touch)
+                if (InteractiveType == InputType.Touch && Input.touchCount > 0)
                 {
                     Touch touch = Input.GetTouch(0);
                     pos = touch.position;
@@ -585,7 +585,6 @@ namespace DataMesh.AR.Interactive
                         hasTouch = false;
                     }
                 }
-
 
                 // 按住Ctrl，开始启动Navigateion模拟 
                 if (currentRecognizer == navigationRecognizer)

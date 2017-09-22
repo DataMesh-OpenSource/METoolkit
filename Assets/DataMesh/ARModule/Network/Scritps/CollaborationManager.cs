@@ -64,6 +64,10 @@ namespace DataMesh.AR.Network
         /// 服务器地址
         /// </summary>
         public string serverHost = "";
+        /// <summary>
+        /// 服务器端口
+        /// </summary>
+        public int serverPort;
 
         public CollaborationMessageType messageType = CollaborationMessageType.ProtoBuf;
 
@@ -120,6 +124,7 @@ namespace DataMesh.AR.Network
             AppConfig config = AppConfig.Instance;
             config.LoadConfig(MEHoloConstant.NetworkConfigFile);
             serverHost = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
+            serverPort = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Port", "8848"));
 
             roomId = RoomManager.Instance.GetCurrentRoom();
 
@@ -154,8 +159,8 @@ namespace DataMesh.AR.Network
         /// <param name="cb"></param>
         private void StartEnterRoom()
         {
-            socketUrl = "ws://" + serverHost + "/me/live/register/" + MEHoloEntrance.Instance.AppID + "/" + roomId + "/" + clientId;
-            socketUrlForSyncTime = "ws://" + serverHost + "/me/live/time";
+            socketUrl = "ws://" + serverHost + ":"+ serverPort.ToString() + "/me/live/register/" + MEHoloEntrance.Instance.AppID + "/" + roomId + "/" + clientId;
+            socketUrlForSyncTime = "ws://" + serverHost +":"+ serverPort.ToString() + "/me/live/time";
 
             Debug.Log("Sync Time Url=" + socketUrlForSyncTime);
 
@@ -244,7 +249,7 @@ namespace DataMesh.AR.Network
             enterRoomResult = EnterRoomResult.Waiting;
 
             // 尝试加入房间
-            syncApi = new SyncApi("http://" + serverHost + "");
+            syncApi = new SyncApi("http://" + serverHost +":"+ serverPort.ToString() + "");
             Debug.Log("ip=" + serverHost);
             Debug.Log("app=" + MEHoloEntrance.Instance.AppID + " room=" + roomId + " init=" + roomInitData);
 
@@ -310,6 +315,8 @@ namespace DataMesh.AR.Network
                     }
 
                     errorString = enterRoomResponse.Message;
+
+                    Debug.LogWarning("Error String : " + errorString);
                 }
 
             }
@@ -344,7 +351,6 @@ namespace DataMesh.AR.Network
         {
             syncClient = new SyncClient(socketUrl);
             syncClient.StartClient();
-
             Debug.Log("Start to connect [" + socketUrl + "]");
         }
 

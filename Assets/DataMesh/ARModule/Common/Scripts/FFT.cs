@@ -30,7 +30,7 @@ namespace DataMesh.AR.Common
         public static FFT Instance;
         private bool doSound = true;
         private int deviceNum;
-
+        private bool audioEnabled=false;
 
         private struct AudioObj
         {
@@ -55,7 +55,7 @@ namespace DataMesh.AR.Common
         {
             playerPrefab=new GameObject("playerPrefab");
             AudioSource audioSource=playerPrefab.AddComponent<AudioSource>();
-            audioSource.volume = 0.5f;
+            audioSource.volume = 1.0f;
             Instance = this;
 
             crossovers[0] = 30; //guesstimating sample lengths for frequency bands
@@ -81,6 +81,7 @@ namespace DataMesh.AR.Common
                 inputDevices[i] = Microphone.devices[i].ToString();
 
             CurrentAudioInput = Microphone.devices[deviceNum].ToString();
+            if (CurrentAudioInput != string.Empty) audioEnabled = true;
 
             //InvokeRepeating("Check", 0, 1.0f / 15.0f);
             StartCoroutine(StartRecord());
@@ -131,15 +132,17 @@ namespace DataMesh.AR.Common
 
         private IEnumerator StartRecord()
         {
+            if (audioEnabled) {
+                audioObj[index].clip = Microphone.Start(Microphone.devices[deviceNum], true, 5, samplingRate);
+                /*
+            the longer the mic recording time, the less often there are "hiccups" in game performance
+            but also due to being pitched down, the playback gradually falls farther behind the recording
+            */
 
-            audioObj[index].clip = Microphone.Start(Microphone.devices[deviceNum], true, 5, samplingRate);
-            /*
-        the longer the mic recording time, the less often there are "hiccups" in game performance
-        but also due to being pitched down, the playback gradually falls farther behind the recording
-        */
-
-            //print("recording to audioObj " + index);
-            StartCoroutine(StartPlay(audioObj[index].clip));
+                //print("recording to audioObj " + index);
+                StartCoroutine(StartPlay(audioObj[index].clip));
+            }
+                
             yield return new WaitForSeconds(5);
             StartCoroutine(StartRecord()); //swaps audio buffers, begins recording and playback of new buffer
                                            /* it is necessary to swap buffers, otherwise the audioclip quickly becomes too large and begins to slow down the system */

@@ -12,7 +12,6 @@ namespace DataMesh.AR.SpectatorView
     {
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
-
         public LiveMainPanel mainPanel;
         public LiveSpectatorViewSelectPanel spectatorViewSelectPanel;
         public LiveSpectatorViewHololensPanel spectatorViewHololensPanel;
@@ -25,6 +24,7 @@ namespace DataMesh.AR.SpectatorView
         public Text InfoDialogText;
         public Button infoDialogClose;
 
+        public LiveAlbumCloudPannel albumCloudPannel;
 
 
         private LiveController liveController;
@@ -161,6 +161,18 @@ namespace DataMesh.AR.SpectatorView
             spectatorViewSelectPanel.gameObject.SetActive(false);
             spectatorViewHololensPanel.gameObject.SetActive(true);
         }
+
+        public void ShowAlbumUI()
+        {
+            albumCloudPannel.gameObject.SetActive(true);
+            albumCloudPannel.OpenAndRefreshAlbumProfileName();
+        }
+
+        public void HidingAlbumUI()
+        {
+            albumCloudPannel.CloseAlbumCloudPannelWindow();
+        }
+
 #endif
     }
 }

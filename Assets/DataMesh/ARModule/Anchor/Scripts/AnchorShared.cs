@@ -246,7 +246,7 @@ namespace DataMesh.AR.Anchor {
             {
                 api = new AnchorApi("http://" + serverHost, serverPort);
 
-                Debug.Log("Upload Anchor! app=" + appId + " room=" + roomId + " ip=" + api.host + " port=" + api.port);
+                //Debug.Log("Upload Anchor! app=" + appId + " room=" + roomId + " ip=" + api.host + " port=" + api.port);
 
                 var responseUpload = await api.UploadAnchor(appId, roomId, anchorFileName, anchor, 300);
             }
@@ -307,7 +307,7 @@ namespace DataMesh.AR.Anchor {
             {
                 api = new AnchorApi("http://" + serverHost, serverPort);
 
-                Debug.Log("Download Anchor! app=" + appId + " room=" + roomId + " ip=" + api.host + " port=" + api.port);
+                //Debug.Log("Download Anchor! app=" + appId + " room=" + roomId + " ip=" + api.host + " port=" + api.port);
 
                 importedData = await api.DownloadAnchor(appId, roomId);
             }

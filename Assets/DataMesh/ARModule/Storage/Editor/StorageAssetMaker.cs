@@ -10,8 +10,19 @@ namespace DataMesh.AR.Storage
     public static class StorageAssetMaker
     {
 
-        [MenuItem("Assets/DataMesh/Build Storage Asset (PC and WSA)")]
-        public static void MakeAsset()
+        [MenuItem("Assets/DataMesh/Build Storage Asset (PC)")]
+        public static void MakeAssetPC()
+        {
+            MakeAsset(BuildTarget.StandaloneWindows64);
+        }
+
+        [MenuItem("Assets/DataMesh/Build Storage Asset (WSA)")]
+        public static void MakeAssetUWP()
+        {
+            MakeAsset(BuildTarget.WSAPlayer);
+        }
+
+        private static void MakeAsset(BuildTarget buildTarget)
         {
             if (Selection.objects.Length == 0)
             {
@@ -52,8 +63,8 @@ namespace DataMesh.AR.Storage
                     buildMap[0].assetBundleName = obj.name;
                     buildMap[0].assetNames = new string[] { assetPath };
 
-                    BuildPipeline.BuildAssetBundles(srcPath, buildMap, BuildAssetBundleOptions.None, BuildTarget.WSAPlayer);
-
+                    BuildPipeline.BuildAssetBundles(srcPath, buildMap, BuildAssetBundleOptions.None, buildTarget);
+                     
 
                     Debug.Log("Build OK!");
 

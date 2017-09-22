@@ -17,16 +17,16 @@ namespace DataMesh.AR.Samples.Collaboration
     public class CollaborationSample : MonoBehaviour, IMessageHandler
     {
         private MultiInputManager inputManager;
-        CollaborationManager cm;
-        CursorController cursor;
+        private CollaborationManager cm;
+        private CursorController cursor;
 
-        ColorType CurrentColor;
-        ShowObject showObject;
-        SceneObject roomData;
+        private ColorType CurrentColor;
+        private ShowObject showObject;
+        private SceneObject roomData;
 
         void Awake()
         {
-            MEHoloEntrance.Instance.AppID = "CollaborationSample";
+            MEHoloEntrance.Instance.AppID = "XYR_Demo";
         }
 
         void Start()
@@ -58,7 +58,7 @@ namespace DataMesh.AR.Samples.Collaboration
             string obj_type = "ColorType";
 
             MsgEntry msg = new MsgEntry();
-            msg.ShowId = showId;
+            msg.ShowId = showId;    
 
             ObjectInfo info = new ObjectInfo();
             info.ObjType = obj_type;

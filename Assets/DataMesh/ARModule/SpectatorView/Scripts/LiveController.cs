@@ -42,6 +42,7 @@ namespace DataMesh.AR.SpectatorView
 
         public System.Action cbStartMoveAnchor;
         public System.Action cbEndMoveAnchor;
+        public GameObject holoCameraObject;
 
 
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
@@ -119,12 +120,13 @@ namespace DataMesh.AR.SpectatorView
         /// <summary>
         /// Live拍摄所使用的摄像机的Prefab
         /// </summary>
-        public GameObject holoCameraPrefab;
+        //public GameObject holoCameraPrefab;
 
         [HideInInspector]
         public LiveControllerUI liveUI;
 
         private string holoServerHost;
+        private int holoServerPort;
 
         private IRecordNamerGenerator nameGenerator = new RecordNameGeneratorDefault();
         private string currentName;
@@ -133,6 +135,7 @@ namespace DataMesh.AR.SpectatorView
 
         private Camera mainCamera;
         private Transform mainCameraTransform;
+        private Transform holoCameraTransform;
 
         [HideInInspector]
         public bool hololensConnected = false;
@@ -161,9 +164,7 @@ namespace DataMesh.AR.SpectatorView
         private SyncServer server;
         private LiveServerHandler handler;
         private UdpListener udpListener;
-
-        [HideInInspector]
-        public HolographicCameraManager holoCamera = null;
+        public HolographicCameraManager holoCamera;
         [HideInInspector]
         public CalibrationManager calibrationManager;
 
@@ -208,12 +209,26 @@ namespace DataMesh.AR.SpectatorView
             mainCamera = Camera.main;
 
             mainCameraTransform = Camera.main.transform;
+            holoCameraTransform = holoCamera.transform;
+            Common.FFT fft = holoCamera.GetComponent<Common.FFT>();
+            if (fft == null)
+            {
+                fft = holoCamera.gameObject.AddComponent<Common.FFT>();
+            }
             anchorController = SceneAnchorController.Instance;
             inputManager = MultiInputManager.Instance;
             wdpController = LiveWDPController.Instance;
 
-            // 如果Live激活，则自动启动 
-            AutoTurnOn = MEHoloConstant.IsLiveActive;
+            if (MEHoloConstant.IsLiveActive)
+            {
+                // 如果Live激活，则自动启动 
+                AutoTurnOn = MEHoloConstant.IsLiveActive;
+            }
+            else
+            {
+                holoCamera.gameObject.SetActive(false);
+            }
+
         }
 
         protected override void _TurnOn()
@@ -228,6 +243,7 @@ namespace DataMesh.AR.SpectatorView
 
             config.LoadConfig(MEHoloConstant.CalibrationConfigFile);
             holoServerHost = config.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
+            int.TryParse(config.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Port", "8848"), out holoServerPort);
 
             outputPath = config.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Out_Put_Path", "./");
             if (!outputPath.EndsWith("/") && !outputPath.EndsWith("\\"))
@@ -242,6 +258,8 @@ namespace DataMesh.AR.SpectatorView
                 LiveParam.SaveParam();
             }
 
+
+
             // 读取本地位置存储文件 
             LoadTransformByFile();
 
@@ -253,11 +271,6 @@ namespace DataMesh.AR.SpectatorView
 
             // 初始化Windows device protocal
             wdpController.Init(this, liveUI);
-
-
-            // 启动Lilve摄像机 
-            GameObject cameraObj = PrefabUtils.CreateGameObjectToParent(this.gameObject, holoCameraPrefab);
-            holoCamera = cameraObj.GetComponent<HolographicCameraManager>();
 
             calibrationManager = holoCamera.gameObject.AddComponent<CalibrationManager>();
             calibrationManager.Init();
@@ -273,7 +286,7 @@ namespace DataMesh.AR.SpectatorView
             //mainCamera.cullingMask = 0;
 
             // 设置一下frameoffset
-            SetFrameOffset(0.5f);
+            SetFrameOffset(0f);
 
             // 停止input操作
             /*
@@ -282,6 +295,11 @@ namespace DataMesh.AR.SpectatorView
                 inputManager.StopCapture();
             }
             */
+
+            // 绑定Anchor回调 
+            anchorController.AddCallbackTurnOn(OnAnchorTurnOn);
+            anchorController.AddCallbackTurnOff(OnAnchorTurnOff);
+
 
 
         }
@@ -301,33 +319,32 @@ namespace DataMesh.AR.SpectatorView
                 currentLogName = null;
             }
         }
-
+        
         private IEnumerator StartHoloCamera()
         {
             yield return new WaitForSecondsRealtime(1);
 
-            // 添加摄像机跟随组件 
-            Common.FollowMainCamera followMainCamera = holoCamera.gameObject.GetComponent<Common.FollowMainCamera>();
-            if (followMainCamera == null)
-            {
-                followMainCamera = holoCamera.gameObject.AddComponent<Common.FollowMainCamera>();
-            }
-            followMainCamera.positionOffset = calibrationManager.data.Translation;
-            followMainCamera.rotationOffset = calibrationManager.data.Rotation.eulerAngles;
 
+            CameraFlyController fly = mainCamera.GetComponent<CameraFlyController>();
+            if (fly != null)
+            {
+                fly.followedObjects.Add(holoCamera.transform);
+            }
+
+            
             // 启动 
-            holoCamera.Init(calibrationManager.data, holoServerHost);
+            holoCamera.Init(calibrationManager.data, holoServerHost, holoServerPort);
 
             holoCamera.gameObject.SetActive(true);
 
-
-
+            holoCameraTransform = holoCamera.transform;
 
         }
 
         protected override void _TurnOff()
         {
-
+            anchorController.RemoveCallbackTurnOn(OnAnchorTurnOn);
+            anchorController.RemoveCallbackTurnOn(OnAnchorTurnOff);
         }
 
         public void StartHololensServer()
@@ -743,8 +760,12 @@ namespace DataMesh.AR.SpectatorView
 
             if (count > 0)
             {
-                mainCameraTransform.position = syncCameraPos / (float)count;
+                mainCameraTransform.position = syncCameraPos / (float)count + calibrationManager.data.Translation;
                 mainCameraTransform.rotation = syncCameraRot;
+                mainCameraTransform.eulerAngles += calibrationManager.data.Rotation.eulerAngles;
+
+                holoCameraTransform.position = mainCameraTransform.position;
+                holoCameraTransform.rotation = mainCameraTransform.rotation;
 
                 for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
                 {
@@ -886,9 +907,9 @@ namespace DataMesh.AR.SpectatorView
             waitingString = "Download spatial mapping OK!";
         }
 
-
-        public void StartMoveAnchor()
+        private void OnAnchorTurnOn()
         {
+            Debug.Log("Live receive Anchor turn on!");
             //panel.ShowBottomBar(false);
             liveUI.isModifyAnchor = true;
 
@@ -899,26 +920,13 @@ namespace DataMesh.AR.SpectatorView
                 cbStartMoveAnchor();
 
             anchorController.AddCallbackFinish(AnchorControlFinish);
-            StartCoroutine(StartSceneAnchorController());
         }
 
-        private IEnumerator StartSceneAnchorController()
+        private void OnAnchorTurnOff()
         {
-            yield return null;
-            anchorController.TurnOn();
-        }
-
-        private void AnchorControlFinish()
-        {
-            Debug.Log("Anchor Adujst finish!");
-            if (inputManager != null)
-            {
-                //inputManager.StopCapture();
-            }
+            Debug.Log("Live receive Anchor turn off!");
 
             anchorController.RemoveCallbackFinish(AnchorControlFinish);
-
-            anchorController.TurnOff();
 
             if (cbEndMoveAnchor != null)
                 cbEndMoveAnchor();
@@ -931,6 +939,22 @@ namespace DataMesh.AR.SpectatorView
 
             liveUI.isModifyAnchor = false;
             //panel.ShowBottomBar(true);
+        }
+
+        public void StartMoveAnchor()
+        {
+            StartCoroutine(StartSceneAnchorController());
+        }
+
+        private IEnumerator StartSceneAnchorController()
+        {
+            yield return null;
+            anchorController.TurnOn();
+        }
+
+        private void AnchorControlFinish()
+        {
+            anchorController.TurnOff();
         }
 
 
@@ -954,12 +978,30 @@ namespace DataMesh.AR.SpectatorView
             {
                 listenerList[i].OnRecordStop(outputPath, currentName);
             }
+        }
 
+        public void StopCapture(ref string videoOutputPath , ref string videoName)
+        {
+            StopRecording();
+            videoOutputPath = outputPath;
+            videoName = currentName;
+            for (int i = 0; i < listenerList.Count; i++)
+            {
+                listenerList[i].OnRecordStop(videoOutputPath,videoName);
+            }
         }
 
         public void TakeSnap()
         {
             TakePictureMe(outputPath, nameGenerator.GetName() + ".png");
+        }
+
+        //添加一个可以返回outputPath和name的方法
+        public void TakeSnap(ref string imageOutputPath , ref string imageName)
+        {
+            imageOutputPath = outputPath;
+            imageName = nameGenerator.GetName() + ".png";
+            TakePictureMe(imageOutputPath,imageName);
         }
 
 
@@ -979,14 +1021,16 @@ namespace DataMesh.AR.SpectatorView
                 {
                     if (FillVectorFromString(data["CameraPos"], out v))
                     {
-                        mainCamera.transform.position = v;
+                        mainCameraTransform.position = v;
+                        holoCameraTransform.position = mainCameraTransform.position;
                     }
                 }
                 if (data.ContainsKey("CameraRot"))
                 {
                     if (FillVectorFromString(data["CameraRot"], out v))
                     {
-                        mainCamera.transform.eulerAngles = v;
+                        mainCameraTransform.eulerAngles = v;
+                        holoCameraTransform.rotation = mainCameraTransform.rotation;
                     }
                 }
 
@@ -1095,7 +1139,7 @@ namespace DataMesh.AR.SpectatorView
         // 仅实现空接口 
         protected override void _Init()
         {
-            
+            holoCameraObject.gameObject.SetActive(false);
         }
         // 仅实现空接口 
         protected override void _TurnOn()

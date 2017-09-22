@@ -784,6 +784,11 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 114278018636821324, guid: f1d4a397704663849abaa7ba51960901,
+        type: 2}
+      propertyPath: simulateGaze
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: f1d4a397704663849abaa7ba51960901, type: 2}
   m_IsPrefabParent: 0

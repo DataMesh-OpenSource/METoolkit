@@ -198,10 +198,23 @@ namespace DataMesh.AR.Anchor
         /// <summary>
         /// 对anchor操作全部完成后触发的回调，以便通知使用者，操作已经完成
         /// </summary>
-        [HideInInspector]
         private System.Action cbAnchorControlFinish;
         public void AddCallbackFinish(System.Action cb) { cbAnchorControlFinish += cb; }
         public void RemoveCallbackFinish(System.Action cb) { cbAnchorControlFinish -= cb; }
+
+        /// <summary>
+        /// 开启调整时的回调 
+        /// </summary>
+        private System.Action cbTurnOn;
+        public void AddCallbackTurnOn(System.Action cb) { cbTurnOn += cb; }
+        public void RemoveCallbackTurnOn(System.Action cb) { cbTurnOn -= cb; }
+
+        /// <summary>
+        /// 关闭调正时的回调 
+        /// </summary>
+        private System.Action cbTurnOff;
+        public void AddCallbackTurnOff(System.Action cb) { cbTurnOff += cb; }
+        public void RemoveCallbackTurnOff(System.Action cb) { cbTurnOff -= cb; }
 
         protected WorldAnchorStore anchorStore;
         protected SpatialMappingManager spatialMappingManager;
@@ -221,7 +234,6 @@ namespace DataMesh.AR.Anchor
 
         private int originInputLayer;
         private bool originNeedAssistKey;
-
 
         public Camera markCamera;
         //private GameObject markCameraObj;
@@ -352,6 +364,7 @@ namespace DataMesh.AR.Anchor
         /// </summary>
         protected override void _TurnOn()
         {
+            Debug.Log("Turn On anchor!!!");
 
             FitCamera();
 
@@ -360,7 +373,8 @@ namespace DataMesh.AR.Anchor
 
             markCamera.gameObject.SetActive(true);
 
-
+            if (cbTurnOn != null)
+                cbTurnOn();
 
         }
 
@@ -373,6 +387,9 @@ namespace DataMesh.AR.Anchor
             BindGazeManager(false);
 
             markCamera.gameObject.SetActive(false);
+
+            if (cbTurnOff != null)
+                cbTurnOff();
         }
 
         /// <summary>
@@ -858,7 +875,7 @@ namespace DataMesh.AR.Anchor
         ////////////////////////////////////////////
 
         private float moveSpeed = 1f;
-        private float rotateSpeed = 0.3f;
+        private float rotateSpeed = 60f;
         private Vector3 manipulationStartPos;
         private bool isFitting = false;
         private bool isNav = false;
@@ -1185,7 +1202,7 @@ namespace DataMesh.AR.Anchor
                     Vector3 deltaRot = new Vector3(delta.z, -delta.x, -delta.y);
 
 
-                    currentAnchorInfo.Rotate(deltaRot * rotateSpeed, Space.Self);
+                    currentAnchorInfo.Rotate(deltaRot * rotateSpeed * Time.deltaTime, Space.Self);
                 }
             }
         }

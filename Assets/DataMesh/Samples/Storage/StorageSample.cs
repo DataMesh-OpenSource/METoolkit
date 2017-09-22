@@ -29,6 +29,8 @@ public class StorageSample : MonoBehaviour
 
     private StorageUI storageUI;
 
+    private Asset currentAsset;
+
     void Start()
     {
         StartCoroutine(WaitForInit());
@@ -148,21 +150,29 @@ public class StorageSample : MonoBehaviour
     /// <param name="res"></param>
     private void OnSelect(BaseResource res)
     {
-        Asset asset = res as Asset;
+        currentAsset = res as Asset;
 
         // 显示Loading状态 
         storageUI.ShowLoading();
 
         // 下载资源，传入回调
-        storageManager.DownloadAsset(asset, OnDownloadAssetFinish);
+        storageManager.DownloadAsset(currentAsset, OnDownloadAssetFinish);
     }
 
     /// <summary>
     /// 下载资源完成的回调 
     /// </summary>
     /// <param name="filePath"></param>
-    private void OnDownloadAssetFinish(string filePath)
+    private void OnDownloadAssetFinish(bool rs)
     { 
+        if (!rs)
+        {
+            Debug.LogError("Download error");
+        }
+
+        string fileName = storageManager.GetFileNameFromAsset(currentAsset);
+        string filePath = StorageManager.GetFilePath() + fileName;
+
         Debug.Log("Asset at " + filePath);
 
         if (filePath == null)
@@ -177,7 +187,7 @@ public class StorageSample : MonoBehaviour
         cursor.isBusy = true;
 
         // 下载完毕，开始加载资源并显示 
-        LoadAssetFromFile(filePath);
+        LoadAssetFromFile(fileName);
         //StartCoroutine(LoadAsset(filePath));
     }
 

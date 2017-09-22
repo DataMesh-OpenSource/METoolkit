@@ -57,7 +57,7 @@ namespace DataMesh.AR.SpectatorView
             string value;
             
             // load translation 
-            value = config.GetConfigByFileName(MEHoloConstant.CalibrationConfigFile, "Rotation");
+            value = config.GetConfigByFileName(MEHoloConstant.CalibrationConfigFile, "Translation");
             if (value != null)
             {
                 String[] tokens = value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);

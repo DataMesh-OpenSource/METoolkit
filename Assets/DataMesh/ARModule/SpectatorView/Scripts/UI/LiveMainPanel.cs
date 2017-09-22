@@ -19,6 +19,8 @@ namespace DataMesh.AR.SpectatorView
         public Button TakeSnap;
         public Button FullScreen;
         public Button ClosePreview;
+        public Button buttonOpenAlbum;
+        public Button buttonCloseAlbum;
 
         public InputField frameOffsetInput;
         public Slider alphaSlider;
@@ -52,6 +54,9 @@ namespace DataMesh.AR.SpectatorView
             EventTriggerListener.Get(ClosePreview.gameObject).onClick = OnShowHidePreview;
             EventTriggerListener.Get(FullScreen.gameObject).onClick = OnFullScreen;
 
+            EventTriggerListener.Get(buttonOpenAlbum.gameObject).onClick = OpenAlbum;
+            EventTriggerListener.Get(buttonCloseAlbum.gameObject).onClick = CloseAlbum; 
+
             RefreshInput();
 
             alphaSlider.onValueChanged.AddListener(OnAlphaSliderChange);
@@ -81,19 +86,8 @@ namespace DataMesh.AR.SpectatorView
         // Update is called once per frame
         void Update()
         {
-            if (isRecoding)
-            {
-                StartCapture.gameObject.SetActive(false);
-                StopCapture.gameObject.SetActive(true);
-            }
-            else
-            {
-                StartCapture.gameObject.SetActive(true);
-                StopCapture.gameObject.SetActive(false);
-            }
-
             if (canRecordCPU)
-                StartCapture.interactable = true;
+                StartCapture.interactable = true;  
             else
                 StartCapture.interactable = false;
         }
@@ -106,14 +100,25 @@ namespace DataMesh.AR.SpectatorView
 
         private void OnStartCapture(GameObject go)
         {
-            isRecoding = true;
-            liveUI.OnStartCapture();
+            if (!isRecoding && canRecordCPU)
+            {
+                StartCapture.gameObject.SetActive(false);
+                StopCapture.gameObject.SetActive(true);
+                isRecoding = true;
+                liveUI.OnStartCapture();
+            }
+
         }
 
         private void OnStopCapture(GameObject go)
         {
-            isRecoding = false;
-            liveUI.OnStopCapture();
+            if (isRecoding)
+            {
+                StartCapture.gameObject.SetActive(true);
+                StopCapture.gameObject.SetActive(false);
+                isRecoding = false;
+                liveUI.OnStopCapture();
+            }
         }
 
         public void OnTakeSnap(GameObject go)
@@ -124,6 +129,8 @@ namespace DataMesh.AR.SpectatorView
             StopCoroutine("HideSystemInfo");
             StartCoroutine(HideSystemInfo());
         }
+
+
 
         private IEnumerator HideSystemInfo()
         {
@@ -185,6 +192,34 @@ namespace DataMesh.AR.SpectatorView
             }
 
         }
+
+        //需要加一个获取IsRecording状态的方法
+        public bool Recording
+        {
+            get
+            {
+                return isRecoding;
+            }
+            set
+            {
+                isRecoding = value;
+            }
+        }
+
+        private void OpenAlbum(GameObject obj)
+        {
+            liveUI.ShowAlbumUI();
+            buttonOpenAlbum.gameObject.SetActive(false);
+            buttonCloseAlbum.gameObject.SetActive(true);
+        }
+
+        private void CloseAlbum(GameObject obj)
+        {
+            liveUI.HidingAlbumUI();
+            buttonOpenAlbum.gameObject.SetActive(true);
+            buttonCloseAlbum.gameObject.SetActive(false);
+        }
+
 
 #endif
     }

@@ -24,6 +24,8 @@ namespace DataMesh.AR.Anchor
         public AnchorAdjestButton buttonRotate;
         public AnchorAdjestButton buttonFree;
 
+        public Text anchorNameText;
+
         private SceneAnchorController controller;
 
         public GameObject moveAxis;
@@ -44,7 +46,7 @@ namespace DataMesh.AR.Anchor
 
         private AnchorAdjestType adjustType = AnchorAdjestType.None;
 
-        
+        [HideInInspector]
         public Transform rootObjectTransform;
         //public bool followRoot = true;
 
@@ -73,6 +75,8 @@ namespace DataMesh.AR.Anchor
         {
             anchorName = name;
             this.info = info;
+
+            anchorNameText.text = anchorName;
 
             controller = SceneAnchorController.Instance;
             buttonMove.Init(this);

@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 namespace DataMesh.AR.Interactive
 {
@@ -13,6 +13,8 @@ namespace DataMesh.AR.Interactive
         private Vector3 originalRotation;
 
         private float t = 0f;
+
+        public List<Transform> followedObjects = new List<Transform>();
 
         // 
         void Awake()
@@ -41,7 +43,11 @@ namespace DataMesh.AR.Interactive
             float dT = Time.realtimeSinceStartup - t;
             t = Time.realtimeSinceStartup;
 
-            tr.position += tr.TransformDirection(new Vector3(right, up, forward) * speed * (Input.GetKey(KeyCode.LeftShift) ? 2f : 1f) * dT);
+            if (forward != 0 || right != 0 || up != 0)
+            {
+                tr.position += tr.TransformDirection(new Vector3(right, up, forward) * speed * (Input.GetKey(KeyCode.LeftShift) ? 2f : 1f) * dT);
+            }
+
 
             // Rotation
             Vector3 mpEnd = Input.mousePosition;
@@ -58,6 +64,15 @@ namespace DataMesh.AR.Interactive
             {
                 Vector2 offs = new Vector2((mpEnd.x - mpStart.x) / Screen.width, (mpStart.y - mpEnd.y) / Screen.height);
                 tr.localEulerAngles = originalRotation + new Vector3(offs.y * 360f, offs.x * 360f, 0f);
+
+
+            }
+
+            for (int i = 0; i < followedObjects.Count; i++)
+            {
+                Transform trans = followedObjects[i];
+                trans.rotation = tr.rotation;
+                trans.position = tr.position;
             }
         }
     }

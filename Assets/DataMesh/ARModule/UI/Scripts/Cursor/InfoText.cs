@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+using DataMesh.AR.Utility;
+
 public class InfoText : MonoBehaviour
 {
     public Text text;

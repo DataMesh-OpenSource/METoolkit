@@ -84,6 +84,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c5799f15cc31ee40952070e9d302814, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  randomInit: 0
   speed: {x: 0, y: 10, z: -360}
 --- !u!114 &114843417172214368
 MonoBehaviour:
@@ -129,7 +130,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 999
+  m_SortingOrder: 32100
   m_TargetDisplay: 0
 --- !u!224 &224595910036458948
 RectTransform:

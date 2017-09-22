@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DataMesh.AR.Utility;
 
 namespace DataMesh.AR.SpectatorView
 {

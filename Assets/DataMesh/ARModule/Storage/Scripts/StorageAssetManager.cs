@@ -188,13 +188,14 @@ namespace DataMesh.AR.Storage
         /// <returns></returns>
         public StorageAssetData LoadAsset(string fileName)
         {
-            if (!File.Exists(fileName))
+            string filePath = StorageManager.GetFilePath() + fileName;
+            if (!File.Exists(filePath))
             {
-                Debug.Log("No such File! " + fileName);
+                Debug.Log("No such File! " + filePath);
                 return null;
             }
 
-            byte[] bytes = File.ReadAllBytes(fileName);
+            byte[] bytes = File.ReadAllBytes(filePath);
 
             StorageAssetData data = DecryptAsset(bytes);
 

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DataMesh.AR.Interactive;
+using DataMesh.AR.Utility;
 
 namespace DataMesh.AR.UI
 {

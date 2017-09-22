@@ -23,6 +23,7 @@ namespace DataMesh.AR.Storage
 
         private System.Action<int> cbClickChangePage;
         private System.Action<BaseResource> cbClickResource;
+        private System.Action cbClickClose;
 
         private StorageManager manager;
 
@@ -82,7 +83,7 @@ namespace DataMesh.AR.Storage
                 cbClickResource(res);
         }
 
-        public void ShowUI(System.Action<int> cbChangePage, System.Action<BaseResource> cbResource)
+        public void ShowUI(System.Action<int> cbChangePage, System.Action<BaseResource> cbResource, System.Action cbClose = null)
         {
             if (isShowUI)
                 return;
@@ -92,6 +93,7 @@ namespace DataMesh.AR.Storage
 
             cbClickChangePage = cbChangePage;
             cbClickResource = cbResource;
+            cbClickClose = cbClose;
 
             // 放在视线位置 
             Vector3 headPosition = Camera.main.transform.position;
@@ -192,6 +194,9 @@ namespace DataMesh.AR.Storage
         private void OnUIClose()
         {
             HideUI();
+
+            if (cbClickClose != null)
+                cbClickClose();
         }
 
 

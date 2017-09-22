@@ -213,7 +213,8 @@ namespace DataMesh.AR.UI
             if (IsBusy)
                 return;
 
-            CallbackClose();
+            if (CallbackClose != null)
+                CallbackClose();
         }
 
         public void OnClick(BlockListItem item)

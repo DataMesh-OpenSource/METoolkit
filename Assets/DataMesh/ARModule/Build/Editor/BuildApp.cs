@@ -10,58 +10,6 @@ public class BuildApp
 {
 
 
-    [MenuItem("Assets/DataMesh/Build Water Mark")]
-    public static void BuildWaterMark()
-    {
-        if (Selection.objects.Length != 1)
-        {
-            Debug.LogError("Please select objects!");
-            return;
-        }
-
-        var sel = Selection.objects[0];
-        if (!(sel is Texture2D))
-        {
-            Debug.LogError("Please select a pic");
-            return;
-        }
-
-        string assetPath = AssetDatabase.GetAssetOrScenePath(sel);
-        Debug.Log(assetPath);
-
-        if (!assetPath.EndsWith(".png"))
-        {
-            Debug.LogError("Please select a PNG file!");
-            return;
-        }
-
-        byte[] bt = File.ReadAllBytes(assetPath);
-
-        Debug.Log("length=" + bt.Length);
-
-        string str = System.Convert.ToBase64String(bt);
-
-        Debug.Log("base64 length=" + str.Length);
-
-        string destFile = assetPath.Substring(0, assetPath.Length - 4);
-        destFile += ".txt";
-        File.WriteAllText(destFile, str);
-
-        Debug.Log("Create Success!");
-    }
-
-    /*
-    [MenuItem("Assets/DataMesh/Test Water Mark")]
-    public static void TestWaterMark()
-    {
-        byte[] waterMarkPic = System.Convert.FromBase64String(DataMesh.AR.SpectatorView.Png.png);
-        Debug.Log(waterMarkPic.Length);
-
-        File.WriteAllBytes(Application.dataPath + "/" + "test.png", waterMarkPic);
-        Debug.Log(Application.dataPath + "/" + "test.png");
-    }
-    */
-
     public static void Test()
     {
         Debug.Log("old:" + EditorUserBuildSettings.GetPlatformSettings("", "metroPackageVersion"));

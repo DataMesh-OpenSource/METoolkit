@@ -113,7 +113,7 @@ namespace DataMesh.AR.SpectatorView
             if (!controller.holoCamera.gameObject.activeSelf)
                 return;
 
-            if (imageCapture.texture == null)
+            if (Time.time>3.5f && imageCapture.texture == null)
             {
                 //imageCapture.texture = controller.holoCamera.shaderManager.colorTexture;
                 imageCapture.material = controller.holoCamera.shaderManager.alphaBlendPreviewMat;
