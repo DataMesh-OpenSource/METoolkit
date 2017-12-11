@@ -17,6 +17,13 @@ using System;
 
 namespace DataMesh.AR.SpectatorView
 {
+    public enum LoadTransType
+    {
+        Camera,
+        Anchor,
+        CameraAndAnchor,
+    }
+
     public class LiveController : MEHoloModuleSingleton<LiveController>
     {
 
@@ -261,7 +268,7 @@ namespace DataMesh.AR.SpectatorView
 
 
             // 读取本地位置存储文件 
-            LoadTransformByFile();
+            LoadTransformByFile(LoadTransType.CameraAndAnchor);
 
             // 初始化并启动UI 
             GameObject uiObj = PrefabUtils.CreateGameObjectToParent(this.gameObject, uiPrefab);
@@ -271,12 +278,15 @@ namespace DataMesh.AR.SpectatorView
 
             // 初始化Windows device protocal
             wdpController.Init(this, liveUI);
-
+                
             calibrationManager = holoCamera.gameObject.AddComponent<CalibrationManager>();
             calibrationManager.Init();
 
+            // 刷新显示 
+          //  liveUI.mainPanel.RefreshFOVInput();
+
             // 延迟启动全息摄影机 
-            StartCoroutine(StartHoloCamera());
+            StartHoloCamera();
 
             // Log
             logManager = LogManager.Instance;
@@ -299,9 +309,49 @@ namespace DataMesh.AR.SpectatorView
             // 绑定Anchor回调 
             anchorController.AddCallbackTurnOn(OnAnchorTurnOn);
             anchorController.AddCallbackTurnOff(OnAnchorTurnOff);
+            StartCoroutine(WaitForSetAlpha());
+            StartCoroutine(WaitForSetFilter());
+
+        }
+        private IEnumerator WaitForSetAlpha()
+        {
+            yield return new WaitForSeconds(2.1f);
+
+            while (Time.time<10f)
+            {
+                yield return new WaitForSeconds(0.1f);
+                if (GetAlpha() != LiveParam.Alpha)
+                {
+                    SetAlpha(LiveParam.Alpha);
+
+                }
+                else {
+                    Debug.Log(Time.time);
+                    break;
+                }
+            }
 
 
+        }
 
+        private IEnumerator WaitForSetFilter()
+        {
+            yield return new WaitForSeconds(2.1f);
+            ShaderManager mana = GameObject.FindObjectOfType<ShaderManager>();
+            while (Time.time < 10)
+            {
+                yield return new WaitForSeconds(0.1f);
+
+                if (LiveParam.Filter != mana.alphaBlendPreviewMat.GetFloat("_Filter"))
+                {
+                    LiveParam.Filter = LiveParam.Filter;
+                }
+                else
+                {
+                    Debug.Log(Time.time);
+                    break;
+                }
+            }
         }
 
 
@@ -320,24 +370,53 @@ namespace DataMesh.AR.SpectatorView
             }
         }
         
-        private IEnumerator StartHoloCamera()
+        private void StartHoloCamera()
         {
-            yield return new WaitForSecondsRealtime(1);
-
-
             CameraFlyController fly = mainCamera.GetComponent<CameraFlyController>();
             if (fly != null)
             {
                 fly.followedObjects.Add(holoCamera.transform);
             }
 
-            
             // 启动 
-            holoCamera.Init(calibrationManager.data, holoServerHost, holoServerPort);
+            holoCamera.Init(holoServerHost, holoServerPort);
+
+            // 调整摄影机
+            SetupCameraValues(mainCamera);
+            SetupCameraValues(holoCamera.GetComponent<Camera>());
+
+            // 重设Anchor的FOV
+            anchorController.InitFOV();
 
             holoCamera.gameObject.SetActive(true);
 
             holoCameraTransform = holoCamera.transform;
+
+        }
+
+        private void SetupCameraValues(Camera camera)
+        {
+            if (camera == null)
+            {
+                Debug.LogError("Camera is null.");
+                return;
+            }
+
+            camera.nearClipPlane = 0.01f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0, 0, 0, 0);
+
+            camera.fieldOfView = calibrationManager.data.DSLR_fov.y;
+            camera.enabled = true;
+        }
+
+        public void OnFOVChange()
+        {
+            SetupCameraValues(mainCamera);
+            SetupCameraValues(holoCamera.GetComponent<Camera>());
+
+            // 重设Anchor的FOV
+            anchorController.InitFOV();
 
         }
 
@@ -770,8 +849,8 @@ namespace DataMesh.AR.SpectatorView
                 for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
                 {
                     AnchorObjectInfo info = anchorController.anchorObjectList[i];
-                    info.rootObject.transform.position = syncAnchorPos[i] / (float)count;
-                    info.rootObject.transform.rotation = syncAnchorRot[i];
+                    info.rootTrans.position = syncAnchorPos[i] / (float)count;
+                    info.rootTrans.rotation = syncAnchorRot[i];
 
                     //Debug.Log(" --->Set Anchor [" + info.anchorName + "] to " + syncMsg.anchorPositionList[i] + " | " + syncMsg.anchorRotationList[i]);
                 }
@@ -838,8 +917,8 @@ namespace DataMesh.AR.SpectatorView
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
                 msg.anchorData.anchorNameList.Add(info.anchorName);
-                msg.anchorData.anchorPosition.Add(info.rootObject.transform.position);
-                msg.anchorData.anchorForward.Add(info.rootObject.transform.eulerAngles);
+                msg.anchorData.anchorPosition.Add(info.rootTrans.position);
+                msg.anchorData.anchorForward.Add(info.rootTrans.eulerAngles);
             }
 
             Debug.Log("Send Set Anchor msg type=" + msg.type);
@@ -866,8 +945,8 @@ namespace DataMesh.AR.SpectatorView
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
                 msg.anchorData.anchorNameList.Add(info.anchorName);
-                msg.anchorData.anchorPosition.Add(info.rootObject.transform.position);
-                msg.anchorData.anchorForward.Add(info.rootObject.transform.eulerAngles);
+                msg.anchorData.anchorPosition.Add(info.rootTrans.position);
+                msg.anchorData.anchorForward.Add(info.rootTrans.eulerAngles);
             }
 
             Debug.Log("send message type=" + msg.type);
@@ -1009,51 +1088,57 @@ namespace DataMesh.AR.SpectatorView
         /// <summary>
         /// 从文件中读取所有Anchor和主摄像机的位置 
         /// </summary>
-        public void LoadTransformByFile()
+        public void LoadTransformByFile(LoadTransType type)
         {
             string path = GetSavePath();
 
             Dictionary<string, string> data = AppConfig.AnalyseConfigFile(path);
+            Vector3 v;
             if (data != null)
             {
-                Vector3 v;
-                if (data.ContainsKey("CameraPos"))
+                if (type == LoadTransType.Camera || type == LoadTransType.CameraAndAnchor)
                 {
-                    if (FillVectorFromString(data["CameraPos"], out v))
+                    if (data.ContainsKey("CameraPos"))
                     {
-                        mainCameraTransform.position = v;
-                        holoCameraTransform.position = mainCameraTransform.position;
-                    }
-                }
-                if (data.ContainsKey("CameraRot"))
-                {
-                    if (FillVectorFromString(data["CameraRot"], out v))
-                    {
-                        mainCameraTransform.eulerAngles = v;
-                        holoCameraTransform.rotation = mainCameraTransform.rotation;
-                    }
-                }
-
-                for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
-                {
-                    AnchorObjectInfo info = anchorController.anchorObjectList[i];
-
-                    if (data.ContainsKey("[" + info.anchorName + "]pos"))
-                    {
-                        if (FillVectorFromString(data["[" + info.anchorName + "]pos"], out v))
+                        if (FillVectorFromString(data["CameraPos"], out v))
                         {
-                            info.SetPosition(v);
+                            mainCameraTransform.position = v;
+                            holoCameraTransform.position = mainCameraTransform.position;
                         }
                     }
-
-                    if (data.ContainsKey("[" + info.anchorName + "]rot"))
+                    if (data.ContainsKey("CameraRot"))
                     {
-                        if (FillVectorFromString(data["[" + info.anchorName + "]rot"], out v))
+                        if (FillVectorFromString(data["CameraRot"], out v))
                         {
-                            info.SetEular(v);
+                            mainCameraTransform.eulerAngles = v;
+                            holoCameraTransform.rotation = mainCameraTransform.rotation;
                         }
                     }
+                }
 
+                if (type == LoadTransType.Anchor || type == LoadTransType.CameraAndAnchor)
+                {
+                    for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
+                    {
+                        AnchorObjectInfo info = anchorController.anchorObjectList[i];
+
+                        if (data.ContainsKey("[" + info.anchorName + "]pos"))
+                        {
+                            if (FillVectorFromString(data["[" + info.anchorName + "]pos"], out v))
+                            {
+                                info.SetPosition(v);
+                            }
+                        }
+
+                        if (data.ContainsKey("[" + info.anchorName + "]rot"))
+                        {
+                            if (FillVectorFromString(data["[" + info.anchorName + "]rot"], out v))
+                            {
+                                info.SetEular(v);
+                            }
+                        }
+
+                    }
                 }
             }
             else
@@ -1080,8 +1165,8 @@ namespace DataMesh.AR.SpectatorView
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
 
-                data.Add("[" + info.anchorName + "]pos", GetVectorString(info.rootObject.transform.position));
-                data.Add("[" + info.anchorName + "]rot", GetVectorString(info.rootObject.transform.eulerAngles));
+                data.Add("[" + info.anchorName + "]pos", GetVectorString(info.rootTrans.position));
+                data.Add("[" + info.anchorName + "]rot", GetVectorString(info.rootTrans.eulerAngles));
 
             }
 

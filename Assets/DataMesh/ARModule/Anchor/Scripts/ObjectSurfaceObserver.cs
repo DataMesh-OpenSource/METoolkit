@@ -17,7 +17,7 @@ namespace DataMesh.AR.Anchor
         private void Start()
         {
 #if UNITY_EDITOR
-            if (!UnityEngine.VR.VRDevice.isPresent)
+            if (!UnityEngine.XR.XRDevice.isPresent)
             {
                 // When in the Unity editor and not remoting, try loading saved meshes from a model.
                 Load(RoomModel);

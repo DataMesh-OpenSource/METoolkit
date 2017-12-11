@@ -1,4 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 Shader "Hidden/AlphaBlendVideo"
@@ -15,6 +17,8 @@ Shader "Hidden/AlphaBlendVideo"
         _YUV("YUV", int) = 0
         _SwapBackgroundRB("SwapBackgroundRB", int) = 0
         _NV12("NV12", int) = 0
+
+		_Filter("Filter",Range(0,1))=0
     }
     
     SubShader
@@ -45,7 +49,7 @@ Shader "Hidden/AlphaBlendVideo"
             v2f vert(appdata v)
             {
                 v2f o;
-                o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 return o;
             }
@@ -60,6 +64,7 @@ Shader "Hidden/AlphaBlendVideo"
             int _YUV;
             int _NV12;
             int _SwapBackgroundRB;
+			float _Filter;
 
             fixed4 fragRGBA(v2f i)
             {
@@ -81,6 +86,7 @@ Shader "Hidden/AlphaBlendVideo"
                 }
 
                 backCol = tex2D(_MainTex, backColUV);
+				backCol.rgba = backCol.rgba - float4(_Filter, _Filter, _Filter, 0);
 
                 if (_SwapBackgroundRB == 0)
                 {
@@ -269,9 +275,13 @@ Shader "Hidden/AlphaBlendVideo"
                 uv4.y = (((rgbaIndex + 3) / 4.0f) / (_Width / 4.0f)) / _Height;
 
                 fixed4 backCol = tex2D(_MainTex, uv1);
+				backCol.rgba = backCol.rgba - float4(_Filter, _Filter, _Filter, 0);
                 fixed4 backCol2 = tex2D(_MainTex, uv2);
+				backCol2.rgba = backCol2.rgba - float4(_Filter, _Filter, _Filter, 0);
                 fixed4 backCol3 = tex2D(_MainTex, uv3);
+				backCol3.rgba = backCol3.rgba - float4(_Filter, _Filter, _Filter, 0);
                 fixed4 backCol4 = tex2D(_MainTex, uv4);
+				backCol4.rgba = backCol4.rgba - float4(_Filter, _Filter, _Filter, 0);
 
                 fixed4 frontCol = tex2D(_FrontTex, fixed2(uv1.x, 1 - uv1.y));
                 fixed4 frontCol2 = tex2D(_FrontTex, fixed2(uv2.x, 1 - uv2.y));
@@ -319,6 +329,10 @@ Shader "Hidden/AlphaBlendVideo"
                     backCol3.rgba = backCol3.bgra;
                     backCol4.rgba = backCol4.bgra;
                 }
+				backCol.rgba = backCol.rgba - float4(_Filter, _Filter, _Filter, 0);
+				backCol2.rgba = backCol2.rgba - float4(_Filter, _Filter, _Filter, 0);
+				backCol3.rgba = backCol3.rgba - float4(_Filter, _Filter, _Filter, 0);
+				backCol4.rgba = backCol4.rgba - float4(_Filter, _Filter, _Filter, 0);
 
                 frontCol = tex2D(_FrontTex, fixed2(uv1.x, 1 - uv1.y));
                 frontCol2 = tex2D(_FrontTex, fixed2(uv2.x, 1 - uv2.y));

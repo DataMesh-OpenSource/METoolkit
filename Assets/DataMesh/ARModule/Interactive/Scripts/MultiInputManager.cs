@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using System;
 using HoloLensXboxController;
+using DataMesh.AR.Anchor;
 
 #if UNITY_METRO && !UNITY_EDITOR
-using UnityEngine.VR.WSA;
-using UnityEngine.VR.WSA.Input;
+using UnityEngine.XR.WSA;
+using UnityEngine.XR.WSA.Input;
 #else
 using DataMesh.AR.FakeUWP;
 #endif
@@ -236,9 +237,13 @@ namespace DataMesh.AR.Interactive
         private bool manipulationSimStart = false;
         private Vector3 manipulationStartPosition;
         private float manipulationSpeed = 2;
+        private float currentAnchorSpeed = 2;
         private Vector3 maniDelta;
-
+        private float anchorVelocityFactor = 1;
         private CameraFlyController cameraFly = null;
+
+        private float moveForward, moveRight, moveUp;
+        private float rotateForward, rotateRight, rotateUp;
 
         #endregion
 
@@ -542,7 +547,9 @@ namespace DataMesh.AR.Interactive
                     }
                 }
             }
-            else if (InteractiveType == InputType.KeybordAndMouse)
+
+            // 即使是Touch模式，也尝试检测键盘鼠标
+            if (InteractiveType == InputType.Touch || InteractiveType == InputType.KeybordAndMouse)
             {
 
                 // 模拟Tap
@@ -587,34 +594,35 @@ namespace DataMesh.AR.Interactive
                 }
 
                 // 按住Ctrl，开始启动Navigateion模拟 
-                if (currentRecognizer == navigationRecognizer)
+                if (!needAssistKey || (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt)))
                 {
                     if (!needAssistKey || (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt)))
                     {
                         // JKLI-UO或者小键盘来模拟六向manipolation
                         float forward = 0f;
                         bool keyDown = false;
-                        if (Input.GetKey(KeyCode.I) || Input.GetKey(KeyCode.Keypad8)) { forward += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad2)) { forward -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.I) || Input.GetKey(KeyCode.Keypad8) || rotateForward > 0) { forward += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad2) || rotateForward < 0) { forward -= 1f; keyDown = true; }
 
                         float right = 0f;
-                        if (Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad6)) { right += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.J) || Input.GetKey(KeyCode.Keypad4)) { right -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.J) || Input.GetKey(KeyCode.Keypad6) || rotateRight > 0) { right += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad4) || rotateRight < 0) { right -= 1f; keyDown = true; }
 
                         float up = 0f;
-                        if (Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad9)) { up += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.U) || Input.GetKey(KeyCode.Keypad7)) { up -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad9) || rotateUp > 0) { up += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.U) || Input.GetKey(KeyCode.Keypad7) || rotateUp < 0) { up -= 1f; keyDown = true; }
 
                         if (keyDown)
                         {
                             if (!navigationSimStart)
                             {
-
+                                SceneAnchorController.Instance.spatialAdjustType = SpatialAdjustType.Rotate;
                                 navigationSimStart = true;
                                 navigationStartPosition = Vector3.zero;
                                 navDelta = Vector3.zero;
                                 if (cbNavigationStart != null)
                                     cbNavigationStart(navigationStartPosition);
+
                             }
 
                             /*
@@ -625,7 +633,7 @@ namespace DataMesh.AR.Interactive
                             */
 
                             if (cbNavigationUpdate != null)
-                                cbNavigationUpdate(new Vector3(right, up, forward));
+                                cbNavigationUpdate(new Vector3(right, up, forward) * currentAnchorSpeed);
                         }
                         else
                         {
@@ -649,28 +657,29 @@ namespace DataMesh.AR.Interactive
                         // JKLI-UO或者小键盘来模拟六向manipolation
                         float forward = 0f;
                         bool keyDown = false;
-                        if (Input.GetKey(KeyCode.I) || Input.GetKey(KeyCode.Keypad8)) { forward += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad2)) { forward -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.T) || Input.GetKey(KeyCode.Keypad8) || moveForward > 0) { forward += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.G) || Input.GetKey(KeyCode.Keypad2) || moveForward < 0) { forward -= 1f; keyDown = true; }
 
                         float right = 0f;
-                        if (Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad6)) { right += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.J) || Input.GetKey(KeyCode.Keypad4)) { right -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.H) || Input.GetKey(KeyCode.Keypad6) || moveRight > 0) { right += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.F) || Input.GetKey(KeyCode.Keypad4) || moveRight < 0) { right -= 1f; keyDown = true; }
 
                         float up = 0f;
-                        if (Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad9)) { up += 1f; keyDown = true; }
-                        if (Input.GetKey(KeyCode.U) || Input.GetKey(KeyCode.Keypad7)) { up -= 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.Keypad9) || moveUp > 0) { up += 1f; keyDown = true; }
+                        if (Input.GetKey(KeyCode.Y) || Input.GetKey(KeyCode.Keypad7) || moveUp < 0) { up -= 1f; keyDown = true; }
 
                         if (keyDown)
                         {
                             if (!manipulationSimStart)
                             {
+                                SceneAnchorController.Instance.spatialAdjustType = SpatialAdjustType.Move;
                                 manipulationSimStart = true;
                                 manipulationStartPosition = Vector3.zero;
                                 maniDelta = Vector3.zero;
                                 if (cbManipulationStart != null)
                                     cbManipulationStart(manipulationStartPosition);
                             }
-                            maniDelta += mainCameraTransform.TransformDirection(new Vector3(right, up, forward) * manipulationSpeed * dT);
+                            maniDelta += mainCameraTransform.TransformDirection(new Vector3(right, up, forward) * currentAnchorSpeed * dT);
 
                             if (cbManipulationUpdate != null)
                                 cbManipulationUpdate(maniDelta);
@@ -897,5 +906,25 @@ namespace DataMesh.AR.Interactive
                 cameraFly.enabled = false;
             }
         }
+
+        public void SetMoveData(float forward, float right, float up)
+        {
+            moveForward = forward;
+            moveRight = right;
+            moveUp = up;
+        }
+
+        public void SetRotateData(float forward, float right, float up)
+        {
+            rotateForward = forward;
+            rotateRight = right;
+            rotateUp = up;
+        }
+
+        public void SetAnchorSpeed(float anchorSpeed)
+        {
+            currentAnchorSpeed = anchorSpeed;
+        }
+
     }
 }

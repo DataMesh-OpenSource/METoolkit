@@ -240,11 +240,7 @@ namespace DataMesh.AR.Network
             SendEnterRoom();
         }
 
-#if UNITY_METRO && !UNITY_EDITOR
         private async void SendEnterRoom()
-#else
-        private void SendEnterRoom()
-#endif
         {
             enterRoomResult = EnterRoomResult.Waiting;
 
@@ -256,11 +252,7 @@ namespace DataMesh.AR.Network
             QueryRoomResponse enterRoomResponse = null;
             try
             {
-#if UNITY_METRO && !UNITY_EDITOR
                 enterRoomResponse = await syncApi.EnterAppRoom(MEHoloEntrance.Instance.AppID, roomId, roomInitData);
-#else
-                enterRoomResponse = syncApi.EnterAppRoom(MEHoloEntrance.Instance.AppID, roomId, roomInitData);
-#endif
             }
             catch (Exception e)
             {

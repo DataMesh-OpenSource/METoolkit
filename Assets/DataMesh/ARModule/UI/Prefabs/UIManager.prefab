@@ -199,7 +199,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31fb0e3011ac49b428d76753d634c8ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  menuDataList: []
+  menuDataList:
+  - {fileID: 4900000, guid: 4f6247b3fd090a041a050ed72f12bd81, type: 3}
   menuPrefab: {fileID: 1144641549810666, guid: 0a02ffbf09b4edb40b87a56552aba148, type: 2}
 --- !u!114 &114277768204383160
 MonoBehaviour:
@@ -235,11 +236,14 @@ MonoBehaviour:
     type: 2}
   cursorInfoPrefab: {fileID: 0}
   infoPrefab: {fileID: 1161283205326106, guid: bb3aa6d64b5339345b6399c8663d4b34, type: 2}
+  anchorNavPrefab: {fileID: 1818941956380378, guid: 2513cd3563cdbd343b48c3a8dd4989d6,
+    type: 2}
   cursorFaceToCamera: 1
   cursorNormal: {fileID: 0}
   cursorTap: {fileID: 0}
   cursorLoading: {fileID: 0}
   cursorInfo: {fileID: 0}
+  anchorNavs: []
   layerMask:
     serializedVersion: 2
     m_Bits: 33

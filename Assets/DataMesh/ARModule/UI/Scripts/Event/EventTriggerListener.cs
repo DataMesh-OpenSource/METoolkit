@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace DataMesh.AR.Event
 {
-    public class EventTriggerListener : UnityEngine.EventSystems.EventTrigger
+    public class ETListener : UnityEngine.EventSystems.EventTrigger
     {
         public delegate void VoidDelegate(GameObject go);
         public VoidDelegate onClick;
@@ -18,10 +18,10 @@ namespace DataMesh.AR.Event
 
         private Selectable selectObj;
 
-        static public EventTriggerListener Get(GameObject go)
+        static public ETListener Get(GameObject go)
         {
-            EventTriggerListener listener = go.GetComponent<EventTriggerListener>();
-            if (listener == null) listener = go.AddComponent<EventTriggerListener>();
+            ETListener listener = go.GetComponent<ETListener>();
+            if (listener == null) listener = go.AddComponent<ETListener>();
             listener.selectObj = go.GetComponent<Selectable>();
             return listener;
         }

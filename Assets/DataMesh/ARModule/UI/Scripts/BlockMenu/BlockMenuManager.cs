@@ -37,7 +37,11 @@ namespace DataMesh.AR.UI
         {
             for (int i = 0; i < menuDataList.Count; i++)
             {
-                string str = menuDataList[i].text;
+                TextAsset t = menuDataList[i];
+                if (t == null)
+                    continue;
+
+                string str = t.text;
 
                 BlockMenuData data = JsonUtil.Deserialize<BlockMenuData>(str);
 

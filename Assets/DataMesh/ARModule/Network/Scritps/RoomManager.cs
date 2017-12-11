@@ -20,7 +20,7 @@ namespace DataMesh.AR.Network
             }
         }
 
-        private string currentRoomName = "Room";
+        private string currentRoomName = "Room22";
 
         private RoomManager() { }
 

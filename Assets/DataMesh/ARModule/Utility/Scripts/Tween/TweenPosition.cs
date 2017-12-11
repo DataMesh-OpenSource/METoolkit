@@ -8,6 +8,10 @@ namespace DataMesh.AR.Utility
         public Vector3 from;
         public Vector3 to;
 
+        public bool tweenX = true;
+        public bool tweenY = true;
+        public bool tweenZ = true;
+
         [HideInInspector]
         public bool worldSpace = false;
 
@@ -41,8 +45,16 @@ namespace DataMesh.AR.Utility
             }
             set
             {
-                if (worldSpace) cachedTransform.position = value;
-                else cachedTransform.localPosition = value;
+                Vector3 tp = worldSpace ? cachedTransform.position : cachedTransform.localPosition;
+                Vector3 rs = new Vector3(
+                    tweenX ? value.x : tp.x,
+                    tweenY ? value.y : tp.y,
+                    tweenZ ? value.z : tp.z
+                    );
+                if (worldSpace)
+                    cachedTransform.position = rs;
+                else
+                    cachedTransform.localPosition = rs;
             }
         }
 

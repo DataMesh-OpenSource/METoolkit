@@ -175,11 +175,11 @@ namespace DataMesh.AR.SpectatorView
             {
                 if (isFullScreen)
                 {
-                    controller.liveUI.ExitFullScreen();
+                    //controller.liveUI.ExitFullScreen();
                 }
                 else
                 {
-                    controller.liveUI.OnFullScreen();
+                    //controller.liveUI.OnFullScreen();
                 }
             }
         }

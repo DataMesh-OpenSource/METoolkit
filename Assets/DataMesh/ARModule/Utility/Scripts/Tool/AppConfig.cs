@@ -237,7 +237,7 @@ namespace DataMesh.AR.Utility
             foreach (string key in data.Keys)
             {
                 string value = data[key];
-                content += key + " = " + value + "\n";
+                content += key + " = " + value + "\r\n";
             }
 
             try

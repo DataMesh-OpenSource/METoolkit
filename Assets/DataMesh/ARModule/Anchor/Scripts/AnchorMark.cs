@@ -39,6 +39,7 @@ namespace DataMesh.AR.Anchor
         public Vector3 offset = Vector3.zero;
 
         public GameObject tips;
+
         private bool needShowTips = false;
 
         [HideInInspector]
@@ -53,6 +54,9 @@ namespace DataMesh.AR.Anchor
         private Transform trans;
 
         private AnchorObjectInfo info;
+
+        private float distance = 30f;
+        private float viewAngle = 30;
 
         void Awake()
         {
@@ -250,6 +254,8 @@ namespace DataMesh.AR.Anchor
         {
             cursorRotateScene.SetActive(false);
         }
+
+
     }
 
 }

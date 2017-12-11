@@ -5,17 +5,30 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/DataMesh/Samples/SceneAnchorSample/SceneAnchorSample.unity
+    guid: f9a031b26d843df4eb53f14361886e2b
   - enabled: 0
     path: Assets/DataMesh/Samples/GettingStarted/Start.unity
+    guid: 933f43227a233c04082a2b76895cbff3
   - enabled: 0
     path: Assets/DataMesh/Samples/XBoxController/XBOXControllerSample.unity
+    guid: 0003f6a5e94bb0a4f8d46c045ab99240
   - enabled: 0
-    path: Assets/DataMesh/Samples/LiveSample/LiveExample.unity
+    path: 
+    guid: 00000000000000000000000000000000
   - enabled: 0
-    path: Assets/HoloLensXboxControllerInput/ExampleScene.unity
+    path: 
+    guid: 00000000000000000000000000000000
   - enabled: 0
-    path: Assets/Scenes/Scene1.unity
-  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 1
     path: Assets/DataMesh/Samples/Storage/StorageSample.unity
+    guid: 8adbf30772e949c44ad23d5253dc6f15
+  - enabled: 0
+    path: Assets/DataMesh/Samples/Collaboration/CollaborationSample.unity
+    guid: 4b8adb16419ec914c9b4e00789f6718e
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000

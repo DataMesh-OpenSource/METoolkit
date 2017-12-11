@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DataMesh.AR.Interactive;
+using DataMesh.AR.Anchor;
 
 namespace DataMesh.AR.UI
 {
@@ -34,18 +35,30 @@ namespace DataMesh.AR.UI
         /// </summary>
         public LayerMask layerMask = int.MaxValue;
 
-
         private MultiInputManager gm;
         private bool isTurnOn = false;
+
+        //private bool isOpenAnchorNav = false;
+
+
+        ////////////////以下是NavCursor相关/////////////////
 
         /// <summary>
         /// 设置游标为忙状态 
         /// </summary>
         [HideInInspector]
         public bool isBusy = false;
-
         private bool isShowInfoCursor = false;
+        private Dictionary<GameObject, GameObject> dicNavCursors;
+        private Camera mainCamera;
+        private GameObject[] anchorMarks;
+        private int cameraOriginlayer;
+        private List<GameObject> displayAnchorListObjects;
 
+
+
+
+        
         ///////////////////以下是鼠标相关////////////////
         public float DistanceFromCollision;
 
@@ -60,6 +73,13 @@ namespace DataMesh.AR.UI
                 cursorTap.SetActive(false);
             if (cursorLoading != null)
                 cursorLoading.SetActive(false);
+
+            //未完成
+            //CheckAnchorNavs();
+            mainCamera = Camera.main;
+
+            //SceneAnchorController.Instance.AddCallbackTurnOn(OpenAnchorNavigation);
+            //SceneAnchorController.Instance.AddCallbackTurnOff(HideAnchorNavigation);
 
             RefreshAll();
         }
@@ -87,6 +107,7 @@ namespace DataMesh.AR.UI
             RefreshBusy();
             RefreshTap();
             RefreshInfo();
+            //RefreshAnchorNav();
         }
 
         public void RefreshNormal()
@@ -305,6 +326,9 @@ namespace DataMesh.AR.UI
             // 计算提示图标的位置和方向，通常与碰撞物体无关，固定距离 
             InfoRoot.position = gm.headPosition + gm.gazeDirection * 2;
             InfoRoot.forward = gm.gazeDirection;
+
+            //if (isOpenAnchorNav)
+            //    UpdateShowAnchorNav();
         }
 
 
@@ -334,6 +358,89 @@ namespace DataMesh.AR.UI
         {
             infoPrefab.SetActive(false);
         }
+
+
+
+        /*
+        public void CheckAnchorNavs()
+        {
+            if (anchorNavs.Length != 0)
+            {
+                for (int i = 0; i < anchorNavs.Length; i++)
+                {
+                    anchorNavs[i].SetActive(false);
+                }
+            }
+        }
+
+
+        public void RefreshAnchorNav()
+        {
+            if (anchorNavs != null)
+            {
+                foreach (var nav in anchorNavs)
+                {
+                    Destroy(nav);
+                }
+            }
+            ClearNavData();
+            if (anchorNavPrefab != null)
+            {
+                int anchorNums = SceneAnchorController.Instance.GetAnchorNums();
+                if (anchorNums > 0)
+                {
+                    dicNavCursors = new Dictionary<GameObject, GameObject>();
+                    anchorMarks = new GameObject[anchorNums];
+                    Debug.Log("current anchors num : " + anchorNums);
+                    anchorMarks = SceneAnchorController.Instance.GetAnchorMarks();
+                    if (anchorMarks == null)
+                        Debug.LogError("anchorMarks is null");
+                    anchorNavs = new GameObject[anchorNums];
+                    for (int i = 0; i < anchorNums; i++)
+                    {
+                        anchorNavs[i] = GameObject.Instantiate(anchorNavPrefab);
+                        anchorNavs[i].transform.SetParent(CursorRoot);
+                        anchorNavs[i].SetActive(false);
+                        anchorNavs[i].GetComponent<AnchorNavigation>().targetAnchor = anchorMarks[i];
+                        dicNavCursors.Add(anchorMarks[i],anchorNavs[i]);
+                    }
+                  //  HideAnchorNavigation();
+                }
+            }
+            else
+            {
+                anchorNavs = null;
+            }
+        }
+
+        public void OpenAnchorNavigation()
+        {
+            isOpenAnchorNav = true;
+            cameraOriginlayer = mainCamera.cullingMask;
+            mainCamera.cullingMask = -1;
+        }
+
+        public void HideAnchorNavigation()
+        {
+            isOpenAnchorNav = false;
+            if(cameraOriginlayer!=0)
+                mainCamera.cullingMask = cameraOriginlayer;
+            foreach (var each in anchorNavs)
+            {
+                each.gameObject.SetActive(false);
+            }
+        }
+
+
+        public void ClearNavData()
+        {
+            if(dicNavCursors!=null)
+                dicNavCursors.Clear();
+            anchorMarks = null;
+            anchorNavs = null;
+        }
+
+            */
 
 
 

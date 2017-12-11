@@ -4,7 +4,7 @@ using System.Linq;
 using DataMesh.AR.Common;
 
 #if UNITY_METRO && !UNITY_EDITOR
-using UnityEngine.VR.WSA.WebCam;
+using UnityEngine.XR.WSA.WebCam;
 #endif
 
 namespace DataMesh.AR.MRC {

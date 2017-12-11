@@ -208,7 +208,7 @@ namespace DataMesh.AR.Anchor
         {
 #if UNITY_EDITOR || UNITY_UWP
             // Allow observering if a device is present (Holographic Remoting)
-            if (!UnityEngine.VR.VRDevice.isPresent) return;
+            if (!UnityEngine.XR.XRDevice.isPresent) return;
 #endif
             if (!IsObserverRunning())
             {
@@ -224,7 +224,7 @@ namespace DataMesh.AR.Anchor
         {
 #if UNITY_EDITOR || UNITY_UWP
             // Allow observering if a device is present (Holographic Remoting)
-            if (!UnityEngine.VR.VRDevice.isPresent) return;
+            if (!UnityEngine.XR.XRDevice.isPresent) return;
 #endif
             if (IsObserverRunning())
             {
@@ -324,5 +324,16 @@ namespace DataMesh.AR.Anchor
                 }
             }
         }
+
+        public void OpenVisualMeshes()
+        {
+            DrawVisualMeshes = true;
+        }
+
+        public void HideVisualMeshes()
+        {
+            DrawVisualMeshes = false;
+        }
+
     }
 }

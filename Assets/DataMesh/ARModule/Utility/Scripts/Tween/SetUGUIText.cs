@@ -58,5 +58,41 @@ public class SetUGUIText : UITweener {
         //throw new NotImplementedException();
     }
 
-    
+    public void SetText(string t)
+    {
+        Init();
+        Debug.Log("set text:" + t+ " on"+textComponent.gameObject.name);
+        textComponent.text = t;
+    }
+
+
+    bool breakDisappear = false;
+    IEnumerator LagDisappear(float timeDelay)
+    {
+        float endTime = Time.time+timeDelay;
+        while (Time.time < endTime)
+        {
+            if (breakDisappear)
+            {
+                yield break;
+            }
+            yield return null;
+        }
+        SetText("");
+    }
+
+
+    public void SetTextInvoke(Dictionary<string, string> param)
+    {
+        breakDisappear = false;
+        if (param.ContainsKey("text"))
+        {
+            SetText(param["text"]);
+        }
+        if (param.ContainsKey("time"))
+        {
+            breakDisappear = false;
+            StartCoroutine(LagDisappear(float.Parse(param["time"])));
+        }
+    }
 }

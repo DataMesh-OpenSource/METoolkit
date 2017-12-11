@@ -119,8 +119,8 @@ namespace DataMesh.AR.SpectatorView
             for (int i = 0; i < anchorController.anchorObjectList.Count; i++)
             {
                 AnchorObjectInfo info = anchorController.anchorObjectList[i];
-                msg.anchorPositionList[i] = info.rootObject.transform.position;
-                msg.anchorRotationList[i] = info.rootObject.transform.rotation;
+                msg.anchorPositionList[i] = info.rootTrans.position;
+                msg.anchorRotationList[i] = info.rootTrans.rotation;
                 if (info.anchor != null)
                     msg.anchorIsLocated[i] = info.anchor.isLocated;
                 else
@@ -328,11 +328,11 @@ namespace DataMesh.AR.SpectatorView
                 {
                     anchorController.RemoveAnchor(info);
 
-                    info.rootObject.transform.position = pos;
+                    info.rootTrans.position = pos;
                     if (msgSetAnchor.anchorData.sendRotation)
-                        info.rootObject.transform.eulerAngles = forward;
+                        info.rootTrans.eulerAngles = forward;
                     else
-                        info.rootObject.transform.forward = forward;
+                        info.rootTrans.forward = forward;
                     //info.mark.followRoot = true;
                     //info.FollowRootObject();
 

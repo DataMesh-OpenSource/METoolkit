@@ -23,7 +23,7 @@ public class SceneAnchorSample : MonoBehaviour
         }
         // Todo: Begin your logic
         inputManager = MultiInputManager.Instance;
-        inputManager.cbTap += OnTapUpload;
+        inputManager.cbTap += OnTap;
     }
 	
 	private void OnTap(int count)

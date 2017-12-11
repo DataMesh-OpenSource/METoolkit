@@ -45,7 +45,7 @@ namespace DataMesh.AR.Common {
             using (UnityWebRequest www = UnityWebRequest.Post("http://192.168.1.102:8080/hololens/collection", form))
             {
                 yield return www.Send();
-                if (www.isError)
+                if (www.isNetworkError)
                 {
                     Debug.Log(www.error);
                 }
@@ -59,7 +59,7 @@ namespace DataMesh.AR.Common {
         {
             UnityWebRequest www = UnityWebRequest.Get(getUrl);
             yield return www.Send();
-            if (www.isError)
+            if (www.isNetworkError)
             {
                 Debug.Log("error:" + www.error);
                 context = "error:" + www.error;

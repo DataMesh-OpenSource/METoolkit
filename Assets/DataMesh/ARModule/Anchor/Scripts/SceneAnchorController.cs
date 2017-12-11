@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using DataMesh.AR.Interactive;
 
+
 #if UNITY_METRO && !UNITY_EDITOR
-using UnityEngine.VR.WSA;
-using UnityEngine.VR.WSA.Persistence;
-using UnityEngine.VR.WSA.Sharing;
+using UnityEngine.XR.WSA;
+using UnityEngine.XR.WSA.Persistence;
+using UnityEngine.XR.WSA.Sharing;
 
 #else
 using DataMesh.AR.FakeUWP;
@@ -30,12 +31,19 @@ namespace DataMesh.AR.Anchor
         Saved,
         NoAnchorObject
     }
+    public enum StabilizationPlaneType
+    {
+        FollowCamera,
+        Normal,
+        Customize,
+    }
 
     public class AnchorObjectInfo
     {
         public string anchorName;
-        public GameObject rootObject;
+        public Transform rootTrans;
         public AnchorMark mark;
+        public Transform arrowTrans;
 
         public WorldAnchor anchor;
         public AnchorDefinition definition;
@@ -45,18 +53,10 @@ namespace DataMesh.AR.Anchor
 
         public AnchorObjectStatus status = AnchorObjectStatus.HasNotSet;
 
-        /*
-        public void FollowRootObject()
-        {
-            mark.transform.position = rootObject.transform.position + mark.offset;
-            mark.transform.rotation = rootObject.transform.rotation;
-        }
-        */
-
         public void FollowMark()
         {
-            rootObject.transform.position = mark.transform.position - mark.offset;
-            rootObject.transform.rotation = mark.transform.rotation;
+            rootTrans.position = mark.transform.position - mark.offset;
+            rootTrans.rotation = mark.transform.rotation;
 
             CheckLockRotation();
         }
@@ -99,32 +99,33 @@ namespace DataMesh.AR.Anchor
         public void SetTransform(Vector3 pos,Vector3 up)
         {
             //mark.transform.position = pos;
-            rootObject.transform.position = pos;
+            rootTrans.position = pos;
             //mark.transform.up = up;
-            rootObject.transform.up = up;
+            rootTrans.up = up;
             CheckLockRotation();
         }
         public void SetPosition(Vector3 pos)
         {
-            rootObject.transform.position = pos;
+            rootTrans.position = pos;
             CheckLockRotation();
         }
         public void SetEular(Vector3 eular)
         {
-            rootObject.transform.eulerAngles = eular;
+            rootTrans.eulerAngles = eular;
             CheckLockRotation();
         }
         public void Rotate(Vector3 rotate, Space space)
         {
             //rootObject.transform.localEulerAngles += rotate;
-            rootObject.transform.Rotate(rotate, space);
+            rootTrans.Rotate(rotate, space);
             CheckLockRotation();
         }
 
         public void Clear()
         {
             GameObject.Destroy(mark.gameObject);
-            rootObject = null;
+            GameObject.Destroy(arrowTrans.gameObject);
+            rootTrans = null;
             anchor = null;
         }
     }
@@ -137,7 +138,18 @@ namespace DataMesh.AR.Anchor
             Spacial,
             None
         }
+        //////////稳定平面相关///////////
 
+        public bool SetStabilizationPlane = true;
+        public bool DrawGizoms = false;
+        public StabilizationPlaneType PlaneType;
+        public Vector3 StabilizationPlaneDir;
+        private GameObject focusedObject;
+        private GameObject oldfocusedObject;
+        private Vector3 planePosition;
+        private Vector3 gazeNormal;
+
+        /////////////end//////////////////
         [Tooltip("Anchor移动标记所在的层级")]
         public int AnchorMarkLayer = 30;
 
@@ -149,6 +161,8 @@ namespace DataMesh.AR.Anchor
         public List<AnchorObjectInfo> anchorObjectList = new List<AnchorObjectInfo>();
 
         public GameObject markPrefab;
+
+        public GameObject arrowPrefab;
 
         /// <summary>
         /// 因为SpectatorView中可能不止要处理一个app的信息，所以这里需要存储appID，不能直接使用MEHoloEntrance.AppName 
@@ -209,6 +223,8 @@ namespace DataMesh.AR.Anchor
         public void AddCallbackTurnOn(System.Action cb) { cbTurnOn += cb; }
         public void RemoveCallbackTurnOn(System.Action cb) { cbTurnOn -= cb; }
 
+
+
         /// <summary>
         /// 关闭调正时的回调 
         /// </summary>
@@ -236,7 +252,15 @@ namespace DataMesh.AR.Anchor
         private bool originNeedAssistKey;
 
         public Camera markCamera;
-        //private GameObject markCameraObj;
+        private Transform mainCameraTrans;
+        private float nearPlane, farPlane;
+        private float fovHorizonTan;
+        private float fovVerticalTan;
+        private float fovHorizonWidthHalf;
+        private float fovVerticalWidthHalf;
+        private float tanView;
+        private const float arrowDistance = 2;
+        private bool showArrow = false;
 
         public int markLayer
         {
@@ -282,6 +306,41 @@ namespace DataMesh.AR.Anchor
             }
         }
 
+        public void ShowAnchorArrow()
+        {
+            showArrow = true;
+        }
+
+        public void HideAnchorArrow()
+        {
+            showArrow = false;
+
+            for (int i = 0;i < anchorObjectList.Count;i ++)
+            {
+                anchorObjectList[i].arrowTrans.gameObject.SetActive(false);
+            }
+        }
+
+        public void InitFOV()
+        {
+            Camera mainCamera = Camera.main;
+            mainCameraTrans = mainCamera.transform;
+            nearPlane = mainCamera.nearClipPlane;
+            farPlane = mainCamera.farClipPlane;
+
+            // 计算横向、纵向的FOV角度的Tan值
+            float fovVertical = mainCamera.fieldOfView * Mathf.Deg2Rad;
+            float fovHorizon = 2 * Mathf.Atan(Mathf.Tan(fovVertical / 2) * mainCamera.aspect);
+
+            Debug.Log("Fov=[" + (fovHorizon * Mathf.Rad2Deg) + "," + (fovVertical * Mathf.Rad2Deg) + "]");
+            fovHorizonTan = Mathf.Tan(fovHorizon / 2f);
+            fovVerticalTan = Mathf.Tan(fovVertical / 2f);
+            fovHorizonWidthHalf = fovHorizonTan * arrowDistance;
+            fovVerticalWidthHalf = fovVerticalTan * arrowDistance;
+            tanView = fovVerticalWidthHalf / fovHorizonWidthHalf;
+
+        }
+
         /// <summary>
         /// 初始化，仅设置信息，并不投入使用
         /// </summary>
@@ -301,6 +360,8 @@ namespace DataMesh.AR.Anchor
             anchorShared = gameObject.AddComponent<AnchorShared>();
 
             anchorShared.Init();
+
+            InitFOV();
 
             // 设置所有的anchor信息 
             AnchorDefinition[] defines = GameObject.FindObjectsOfType<AnchorDefinition>();
@@ -347,7 +408,7 @@ namespace DataMesh.AR.Anchor
             markCamera.gameObject.SetActive(false);
 
             Debug.Log("Anchor count=" + anchorObjectList.Count);
-
+            VuforiaManager.Instance.Init();
         }
 
         private void FitCamera()
@@ -373,6 +434,11 @@ namespace DataMesh.AR.Anchor
 
             markCamera.gameObject.SetActive(true);
 
+            spatialMappingManager.DrawVisualMeshes = true;
+
+            // 打开anchor追踪 
+            ShowAnchorArrow();
+
             if (cbTurnOn != null)
                 cbTurnOn();
 
@@ -388,8 +454,15 @@ namespace DataMesh.AR.Anchor
 
             markCamera.gameObject.SetActive(false);
 
+            spatialMappingManager.DrawVisualMeshes = false;
+
+            // 关闭Anchor追踪 
+            HideAnchorArrow();
+
             if (cbTurnOff != null)
                 cbTurnOff();
+            VuforiaManager.Instance.TurnOff();
+
         }
 
         /// <summary>
@@ -467,8 +540,41 @@ namespace DataMesh.AR.Anchor
             }
         }
 
+        /// <summary>
+        /// 获得当前Anchor数量
+        /// </summary>
+        /// <returns></returns>
+        public int GetAnchorNums()
+        {
+            if(anchorMarkRoot!=null)
+            {
+                return anchorMarkRoot.transform.childCount;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// 获取Marks
+        /// </summary>
+        /// <returns></returns>
+        public GameObject[] GetAnchorMarks()
+        {
+            int anchorNums = GetAnchorNums();
+            GameObject[] anchorMarks = new GameObject[anchorNums];
+            if (anchorMarkRoot != null)
+            {
+                for (int i = 0; i < anchorNums; i++)
+                {
+                    anchorMarks[i] = anchorMarkRoot.transform.GetChild(i).gameObject;
+                }
+                return anchorMarks;
+            }
+            return null;
+        }
+
+
         ////////////////////////////////////////////
-        #region 创建、删除、本地存储Anchor相关内容
+#region 创建、删除、本地存储Anchor相关内容
         ////////////////////////////////////////////
 
         /// <summary>
@@ -480,7 +586,7 @@ namespace DataMesh.AR.Anchor
         {
             AnchorObjectInfo info = new AnchorObjectInfo();
             info.anchorName = name;
-            info.rootObject = obj;
+            info.rootTrans = obj.transform;
 
             AnchorDefinition define = obj.GetComponent<AnchorDefinition>();
             if (define == null)
@@ -490,10 +596,16 @@ namespace DataMesh.AR.Anchor
             }
             info.definition = define;
 
+            // 创建mark物体 
             GameObject markObj = PrefabUtils.CreateGameObjectToParent(anchorMarkRoot, markPrefab);
             AnchorMark mark = markObj.GetComponent<AnchorMark>();
             mark.Init(name, info);
             mark.rootObjectTransform = obj.transform;
+
+            // 创建指引箭头 
+            GameObject arrowObj = PrefabUtils.CreateGameObjectToParent(gameObject, arrowPrefab);
+            info.arrowTrans = arrowObj.transform;
+            arrowObj.SetActive(false);
 
             // 设置位置 
             Vector3 originPos = obj.transform.position;
@@ -545,7 +657,7 @@ namespace DataMesh.AR.Anchor
             if (info.anchor == null)
             {
                 string saveName = GetSaveAnchorName(info.anchorName);
-                WorldAnchor savedAnchor = anchorStore.Load(saveName, info.rootObject);
+                WorldAnchor savedAnchor = anchorStore.Load(saveName, info.rootTrans.gameObject);
                     
                 if (savedAnchor != null)
                 {
@@ -584,7 +696,7 @@ namespace DataMesh.AR.Anchor
 
             Debug.Log("Create Anchor for [" + info.anchorName + "]");
 
-            WorldAnchor anchor = info.rootObject.AddComponent<WorldAnchor>();
+            WorldAnchor anchor = info.rootTrans.gameObject.AddComponent<WorldAnchor>();
             info.anchor = anchor;
 
             info.status = AnchorObjectStatus.Saved;
@@ -596,11 +708,11 @@ namespace DataMesh.AR.Anchor
         /// <param name="info"></param>
         public void RemoveAnchor(AnchorObjectInfo info)
         {
-            WorldAnchor an = info.rootObject.GetComponent<WorldAnchor>();
+            WorldAnchor an = info.rootTrans.GetComponent<WorldAnchor>();
             while (an != null)
             {
                 DestroyImmediate(an);
-                an = info.rootObject.GetComponent<WorldAnchor>();
+                an = info.rootTrans.GetComponent<WorldAnchor>();
             }
 
             info.anchor = null;
@@ -621,7 +733,7 @@ namespace DataMesh.AR.Anchor
 
                 if (removeRootObject)
                 {
-                    GameObject.DestroyImmediate(info.rootObject);
+                    GameObject.DestroyImmediate(info.rootTrans.gameObject);
                 }
             }
             anchorObjectList.Clear();
@@ -795,7 +907,7 @@ namespace DataMesh.AR.Anchor
                         // 先删除anchor 
                         RemoveAnchor(info);
 
-                        WorldAnchor anchor = batch.LockObject(info.anchorName, info.rootObject);
+                        WorldAnchor anchor = batch.LockObject(info.anchorName, info.rootTrans.gameObject);
                         if (anchor == null)
                         {
                             Debug.LogWarning("Anchor [" + info.anchorName + "] can not be found in batch!");
@@ -809,7 +921,7 @@ namespace DataMesh.AR.Anchor
                         else
                         {
                             Debug.Log("Anchor [" + info.anchorName + "] has been load!");
-                            Debug.Log("Andhor in Object? " + info.rootObject.GetComponent<WorldAnchor>());
+                            Debug.Log("Andhor in Object? " + info.rootTrans.GetComponent<WorldAnchor>());
                             info.anchor = anchor;
                             //info.FollowRootObject();
                         }
@@ -869,6 +981,62 @@ namespace DataMesh.AR.Anchor
                 }
             }
         }
+
+        void LateUpdate()
+        {
+            if (SetStabilizationPlane)
+            {
+                LateUpdateConfigureTransformOverridePlane();
+            }
+
+            if (showArrow)
+                FitArrow();
+        }
+
+        private void LateUpdateConfigureTransformOverridePlane()
+        {
+
+            focusedObject = MultiInputManager.Instance.FocusedObject;
+            Vector3 velocity = Vector3.zero;
+            gazeNormal = MultiInputManager.Instance.gazeDirection;
+
+            planePosition = gazeNormal * 5f;
+            gazeNormal = -gazeNormal;
+            if (PlaneType == StabilizationPlaneType.Normal)
+            {
+                if (focusedObject != null)
+                {
+                    planePosition = focusedObject.transform.position;
+                    gazeNormal = focusedObject.transform.position.normalized;
+                }
+
+            }
+            else if (PlaneType == StabilizationPlaneType.Customize)
+            {
+                if (focusedObject != null)
+                {
+                    planePosition = focusedObject.transform.position;
+                    gazeNormal = StabilizationPlaneDir;
+                }
+            }
+            HolographicSettings.SetFocusPointForFrame(planePosition, gazeNormal, velocity);
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (Application.isPlaying && DrawGizoms)
+            {
+                Vector3 planeUp = Vector3.Cross(Vector3.Cross(gazeNormal, Vector3.up), gazeNormal);
+                Gizmos.matrix = Matrix4x4.TRS(planePosition, Quaternion.LookRotation(gazeNormal, planeUp),
+                    new Vector3(4.0f, 3.0f, 0.01f));
+                Color gizmoColor = Color.magenta;
+                gizmoColor.a = 0.5f;
+                Gizmos.color = gizmoColor;
+                Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
+                Gizmos.DrawCube(Vector3.zero, Vector3.one);
+            }
+        }
+
 
         ////////////////////////////////////////////
 #region Anchor标志物操作相关
@@ -1010,8 +1178,11 @@ namespace DataMesh.AR.Anchor
             info.definition.startLock = true;
 
             //info.mark.followRoot = false;
-
+#if !ME_LIVE_ACTIVE
             info.mark.ShowTips();
+#endif
+            VuforiaManager.Instance.TurnOn();
+
         }
 
         private void StopAdjust(AnchorObjectInfo info)
@@ -1100,8 +1271,9 @@ namespace DataMesh.AR.Anchor
             spatialMappingManager.DrawVisualMeshes = false;
             SetLayerMask(LayerMaskType.AnchorMark);
 
+#if !ME_LIVE_ACTIVE
             currentAnchorInfo.mark.ShowTips();
-
+#endif
             ChangeAdjustType(SpatialAdjustType.None);
 
         }
@@ -1184,6 +1356,7 @@ namespace DataMesh.AR.Anchor
                 {
                     Vector3 d = new Vector3(delta.x * moveSpeed, delta.y * moveSpeed, delta.z * moveSpeed);
                     //Debug.Log("M--->" + d);
+
                     currentAnchorInfo.SetPosition(manipulationStartPos + d);
                     //currentAnchorInfo.FollowMark();
                 }
@@ -1213,9 +1386,9 @@ namespace DataMesh.AR.Anchor
             isNav = false;
             if (currentAnchorInfo == null)
                 return;
-
+            #if !ME_LIVE_ACTIVE
             currentAnchorInfo.mark.ShowTips();
-
+#endif
             if (spatialAdjustType == SpatialAdjustType.Move)
             {
                 currentAnchorInfo.mark.ShowMoveAxis(Vector3.one);
@@ -1227,9 +1400,9 @@ namespace DataMesh.AR.Anchor
             isNav = false;
             if (currentAnchorInfo == null)
                 return;
-
+            #if !ME_LIVE_ACTIVE
             currentAnchorInfo.mark.ShowTips();
-
+#endif
         }
 
 
@@ -1239,15 +1412,173 @@ namespace DataMesh.AR.Anchor
             {
                 AnchorObjectInfo info = anchorObjectList[i];
                 if (b)
+                {
+                    #if !ME_LIVE_ACTIVE
                     info.mark.ShowTips();
+#endif
+                }
+                    
                 else
                     info.mark.HideTips();
             }
         }
-        #endregion
+#endregion
 
+        private void FitArrow()
+        {
 
+            for (int i = 0;i <anchorObjectList.Count; i ++)
+            {
+                AnchorObjectInfo info = anchorObjectList[i];
 
+                // 把位置转换到Camera坐标系 
+                Vector3 anchorPos = info.rootTrans.position;
+                Vector3 posInView = mainCameraTrans.InverseTransformPoint(anchorPos);
 
+                if (CheckAnchorPositionInCameraView(posInView))
+                {
+                    info.arrowTrans.gameObject.SetActive(false);
+    }
+                else
+                {
+                    info.arrowTrans.gameObject.SetActive(true);
+                    info.arrowTrans.LookAt(anchorPos);
+
+                    float x, y;
+                    if (posInView.x != 0)
+                    {
+                        float tan = Mathf.Abs(posInView.y) / Mathf.Abs(posInView.x);
+
+                        if (Mathf.Abs(tan) > (tanView))
+                        {
+                            y = Mathf.Sign(posInView.y) * fovVerticalWidthHalf;
+                            x = Mathf.Sign(posInView.x) * fovVerticalWidthHalf / tan;
+                        }
+                        else
+                        {
+                            y = Mathf.Sign(posInView.y) * fovHorizonWidthHalf * tan;
+                            x = Mathf.Sign(posInView.x) * fovHorizonWidthHalf;
+                        }
+                    }
+                    else
+                    {
+                        x = 0;
+                        if (posInView.y > 0)
+                            y = fovVerticalTan;
+                        else
+                            y = -fovVerticalTan;
+                    }
+
+                    info.arrowTrans.position = mainCameraTrans.TransformPoint(new Vector3(x, y, arrowDistance + 0.2f));
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// 判定一个点是否在视野之内
+        /// </summary>
+        /// <param name="anchorPos"></param>
+        private bool CheckAnchorPositionInCameraView(Vector3 posInView)
+        {
+
+            // 如果z值超出近远平面，则表示在视野之外 
+            if (posInView.z < nearPlane || posInView.z > farPlane)
+                return false;
+
+            // 计算X方向的角度是否超越视野 
+            if (Mathf.Abs(posInView.x) / Mathf.Abs(posInView.z) > fovHorizonTan)
+            {
+                return false;
+            }
+
+            // 计算y方向的角度是否超越视野 
+            if (Mathf.Abs(posInView.y) / Mathf.Abs(posInView.z) > fovVerticalTan)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /*
+        /// <summary>
+        /// 开启移动Anchor选项时，根据视角打开NavCursor
+        /// </summary>
+        public void UpdateShowAnchorNav()
+        {
+            Quaternion r = mainCameraTrans.rotation;
+            Vector3 f0 = (mainCameraTrans.position + (r * Vector3.forward) * distance);
+            Debug.DrawLine(mainCameraTrans.position, f0, Color.red);
+
+            //水平方向三角形
+            Quaternion horizontalR0 = Quaternion.Euler(mainCameraTrans.rotation.eulerAngles.x, mainCameraTrans.rotation.eulerAngles.y - viewAngle, mainCameraTrans.rotation.eulerAngles.z);
+            Quaternion horizontalR1 = Quaternion.Euler(mainCameraTrans.rotation.eulerAngles.x, mainCameraTrans.rotation.eulerAngles.y + viewAngle, mainCameraTrans.rotation.eulerAngles.z);
+
+            Vector3 horizontalF1 = (mainCameraTrans.position + (horizontalR0 * Vector3.forward) * distance);
+            Vector3 horizontalF2 = (mainCameraTrans.position + (horizontalR1 * Vector3.forward) * distance);
+
+            //垂直方向三角形
+            Quaternion verticalR0 = Quaternion.Euler(mainCameraTrans.rotation.eulerAngles.x, mainCameraTrans.rotation.eulerAngles.x - viewAngle, mainCameraTrans.rotation.eulerAngles.z);
+            Quaternion verticalR1 = Quaternion.Euler(mainCameraTrans.rotation.eulerAngles.x, mainCameraTrans.rotation.eulerAngles.x + viewAngle, mainCameraTrans.rotation.eulerAngles.z);
+
+            Vector3 verticalF1 = (mainCameraTrans.position + (verticalR0 * Vector3.forward) * distance);
+            Vector3 verticalF2 = (mainCameraTrans.position + (verticalR1 * Vector3.forward) * distance);
+
+            Vector3 targetPoint;
+
+            for (int i = 0; i < anchorMarks.Length; i++)
+            {
+                targetPoint = anchorMarks[i].transform.position;
+                if (isINTriangle(targetPoint, mainCameraTrans.position, horizontalF1, horizontalF2)
+                    && isINTriangle(targetPoint, mainCameraTrans.position, verticalF1, verticalF2))
+                {
+                    if (dicNavCursors.ContainsKey(anchorMarks[i]))
+                    {
+                        dicNavCursors[anchorMarks[i]].SetActive(false);
+                    }
+                }
+                else
+                {
+                    if (dicNavCursors.ContainsKey(anchorMarks[i]))
+                    {
+                        dicNavCursors[anchorMarks[i]].SetActive(true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检测是否在三角形区域内
+        /// </summary>
+        /// <param name="point">监测的目标</param>
+        /// <returns></returns>
+        bool isINTriangle(Vector3 point, Vector3 v0, Vector3 v1, Vector3 v2)
+        {
+            float x = point.x;
+            float y = point.z;
+
+            float v0x = v0.x;
+            float v0y = v0.z;
+
+            float v1x = v1.x;
+            float v1y = v1.z;
+
+            float v2x = v2.x;
+            float v2y = v2.z;
+
+            float t = MathfTool.TriangleArea(v0x, v0y, v1x, v1y, v2x, v2y);
+            float a = MathfTool.TriangleArea(v0x, v0y, v1x, v1y, x, y) + MathfTool.TriangleArea(v0x, v0y, x, y, v2x, v2y) + MathfTool.TriangleArea(x, y, v1x, v1y, v2x, v2y);
+
+            if (Mathf.Abs(t - a) <= 0.01f)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        */
     }
 }

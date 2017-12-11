@@ -55,7 +55,7 @@ namespace DataMesh.AR.Common {
             for (int i = 0; i < lightmapData.Length; i++)
             {
                 lightmapData[i] = new LightmapData();
-                lightmapData[i].lightmapLight = i < lightmapFar.Count ? lightmapFar[i] : null;
+                lightmapData[i].lightmapColor = i < lightmapFar.Count ? lightmapFar[i] : null;
                 lightmapData[i].lightmapDir = i < lightmapNear.Count ? lightmapNear[i] : null;
             }
             LightmapSettings.lightmapsMode = lightmapsMode;
@@ -95,9 +95,9 @@ namespace DataMesh.AR.Common {
                     lightmapNear.Add(data.lightmapDir);
                 }
 
-                if (data.lightmapLight != null)
+                if (data.lightmapColor != null)
                 {
-                    lightmapFar.Add(data.lightmapLight);
+                    lightmapFar.Add(data.lightmapColor);
                 }
             }
             m_RendererInfo = new List<RendererInfo>();

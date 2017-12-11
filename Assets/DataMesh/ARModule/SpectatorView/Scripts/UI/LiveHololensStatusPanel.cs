@@ -57,16 +57,16 @@ namespace DataMesh.AR.SpectatorView
             select.cbSelect = OnSelect;
             select.cbDeselect = OnDeselect;
 
-            EventTriggerListener.Get(buttonSubmit.gameObject).onClick = OnSubmit;
+            ETListener.Get(buttonSubmit.gameObject).onClick = OnSubmit;
 
             InitShow();
 
-            EventTriggerListener.Get(buttonWifiRefresh.gameObject).onClick = OnWifiRefresh;
+            ETListener.Get(buttonWifiRefresh.gameObject).onClick = OnWifiRefresh;
 
-            EventTriggerListener.Get(buttonStartApp.gameObject).onClick = OnStartApp;
-            EventTriggerListener.Get(buttonStopApp.gameObject).onClick = OnStopApp;
+            ETListener.Get(buttonStartApp.gameObject).onClick = OnStartApp;
+            ETListener.Get(buttonStopApp.gameObject).onClick = OnStopApp;
 
-            EventTriggerListener.Get(buttonWifiProfileConnect.gameObject).onClick = OnConnectWifiProfile;
+            ETListener.Get(buttonWifiProfileConnect.gameObject).onClick = OnConnectWifiProfile;
 
             wifiProfileArea.SetActive(false);
 

@@ -92,6 +92,22 @@ namespace DataMesh.AR.SpectatorView
         }
 
         /// <summary>
+        /// 真实画面的滤镜颜色深度
+        /// </summary>
+        private static float filter = 0f;
+        public static float Filter
+        {
+            get { return filter; }
+            set
+            {
+                filter = value;
+                ShaderManager mana = GameObject.FindObjectOfType<ShaderManager>();
+                mana.alphaBlendPreviewMat.SetFloat("_Filter", Filter);
+                isDirty = true;
+            }
+        }
+
+        /// <summary>
         /// 使用WDP连接SpectatorView的HoloLens时使用的账号
         /// </summary>
         private static string authorId = null;
@@ -123,6 +139,20 @@ namespace DataMesh.AR.SpectatorView
         public static bool IsDirty
         {
             get { return isDirty; }
+        }
+
+        /// <summary>
+        /// FOV
+        /// </summary>
+        private static float fov = 0;
+        public static float FOV
+        {
+            get { return fov; }
+            set
+            {
+                fov = value;
+                isDirty = true;
+            }
         }
 
 
@@ -169,6 +199,14 @@ namespace DataMesh.AR.SpectatorView
                 {
                     authorPass = data["AuthorPass"];
                 }
+                if (data.ContainsKey("Filter"))
+                {
+                    filter = float.Parse(data["Filter"]);
+                }
+                if (data.ContainsKey("FOV"))
+                {
+                    fov = float.Parse(data["FOV"]);
+                }
             }
             else
             {
@@ -197,6 +235,8 @@ namespace DataMesh.AR.SpectatorView
             data.Add("SoundVolume", SoundVolume.ToString());
             data.Add("AuthorId", AuthorId);
             data.Add("AuthorPass", AuthorPass);
+            data.Add("Filter", Filter.ToString());
+            data.Add("FOV", FOV.ToString());
 
             Debug.Log("Save file [" + path + "]");
             AppConfig.SaveConfigFile(path, data);

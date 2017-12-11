@@ -21,7 +21,7 @@ namespace DataMesh.AR.SpectatorView
             liveController = b;
             controlPanel = panel;
 
-            EventTriggerListener.Get(StartHololensSpectatorView.gameObject).onClick = OnStartHololensConnect;
+            ETListener.Get(StartHololensSpectatorView.gameObject).onClick = OnStartHololensConnect;
 
         }
 

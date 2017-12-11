@@ -39,12 +39,12 @@ namespace DataMesh.AR.SpectatorView
             liveController = b;
             controlPanel = panel;
 
-            EventTriggerListener.Get(buttonStart.gameObject).onClick = OnStartClick;
-            EventTriggerListener.Get(buttonStop.gameObject).onClick = OnStopClick;
-            EventTriggerListener.Get(DownloadAnchor.gameObject).onClick = OnDownloadAnchorClick;
-            EventTriggerListener.Get(DownloadSpatial.gameObject).onClick = OnDownloadSpatialClick;
-            EventTriggerListener.Get(buttonOpenStatus.gameObject).onClick = OnOpenStatusPanel;
-            EventTriggerListener.Get(buttonCloseStatus.gameObject).onClick = OnCloseStatusPanel;
+            ETListener.Get(buttonStart.gameObject).onClick = OnStartClick;
+            ETListener.Get(buttonStop.gameObject).onClick = OnStopClick;
+            ETListener.Get(DownloadAnchor.gameObject).onClick = OnDownloadAnchorClick;
+            ETListener.Get(DownloadSpatial.gameObject).onClick = OnDownloadSpatialClick;
+            ETListener.Get(buttonOpenStatus.gameObject).onClick = OnOpenStatusPanel;
+            ETListener.Get(buttonCloseStatus.gameObject).onClick = OnCloseStatusPanel;
 
             waitingText.text = "";
 
@@ -140,6 +140,7 @@ namespace DataMesh.AR.SpectatorView
             anchorLocatedText.gameObject.SetActive(!liveController.anchorLocated);
 
         }
+
 
         private void OnStartClick(GameObject go)
         {

@@ -40,6 +40,14 @@ namespace DataMesh.AR.FakeUWP
         }
     }
 
+    public class HolographicSettings
+    {
+        public static void SetFocusPointForFrame(Vector3 planePosition, Vector3 gazeNormal, Vector3 velocity)
+        {
+            //Debug.Log("[Fake] Set Focus Point!");
+        }
+    }
+
     public sealed class GestureRecognizer
     {
         public event GestureErrorDelegate GestureErrorEvent;

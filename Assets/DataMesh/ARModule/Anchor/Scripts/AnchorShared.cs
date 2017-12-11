@@ -7,8 +7,8 @@ using MEHoloClient.Interface.Storage;
 using MEHoloClient.Core.Entities;
 
 #if UNITY_METRO && !UNITY_EDITOR
-using UnityEngine.VR.WSA;
-using UnityEngine.VR.WSA.Sharing;
+using UnityEngine.XR.WSA;
+using UnityEngine.XR.WSA.Sharing;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.Networking;

@@ -219,6 +219,16 @@ Prefab:
       propertyPath: logoTex
       value: 
       objectReference: {fileID: 2800000, guid: 5bdaec780f85bc2439a54210d18e588c, type: 3}
+    - target: {fileID: 20836202361339750, guid: 649fced0e7f51de4080b624678e05793,
+        type: 2}
+      propertyPath: field of view
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 20056810242430530, guid: 649fced0e7f51de4080b624678e05793,
+        type: 2}
+      propertyPath: field of view
+      value: 60
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 649fced0e7f51de4080b624678e05793, type: 2}
   m_IsPrefabParent: 0
@@ -351,10 +361,6 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4736632018826544, guid: a63734d788aa60e488ed79511a9643e2, type: 2}
       propertyPath: m_RootOrder
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1779880960374818, guid: a63734d788aa60e488ed79511a9643e2, type: 2}
-      propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -753,6 +759,11 @@ Prefab:
       propertyPath: m_RootOrder
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 114224795388337402, guid: 49e8f70639693f0448fdbdd1617cd9c2,
+        type: 2}
+      propertyPath: menuDataList.Array.data[0]
+      value: 
+      objectReference: {fileID: 4900000, guid: 450f9418011ae2d4784293ce137cd318, type: 3}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 49e8f70639693f0448fdbdd1617cd9c2, type: 2}
   m_IsPrefabParent: 0

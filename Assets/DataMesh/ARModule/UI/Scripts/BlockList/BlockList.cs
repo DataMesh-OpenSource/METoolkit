@@ -176,7 +176,7 @@ namespace DataMesh.AR.UI
 
         private void OnButtonEnter(GameObject obj)
         {
-            Transform border = obj.transform.FindChild("border");
+            Transform border = obj.transform.Find("border");
             if (border != null)
                 border.gameObject.SetActive(true);
             //TransitObject.StartTransit(obj, 0, true);
@@ -184,7 +184,7 @@ namespace DataMesh.AR.UI
         private void OnButtonExit(GameObject obj)
         {
             //TransitObject.StartTransit(obj, 0, false);
-            Transform border = obj.transform.FindChild("border");
+            Transform border = obj.transform.Find("border");
             if (border != null)
                 border.gameObject.SetActive(false);
         }

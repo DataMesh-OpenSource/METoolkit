@@ -21,14 +21,20 @@ using DataMesh.AR.Interactive;
 using System.Reflection;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
-public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPointerExitHandler ,IPointerClickHandler{
+public class LiveAlbumCloudPannel : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+{
 
     [Serializable]
     public class JsonData
     {
-       public int code;
-       public string msg;
-       public string[] data;
+        public int code;
+        public string msg;
+        public string[] data;
+    }
+
+    public class JsonTimeData
+    {
+        public int[] data;
     }
 
     public enum UploadFileType
@@ -40,7 +46,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
     [HideInInspector]
     public float recordTime = 10f;
     public Dropdown albumProfileDropdown; //下拉菜单
-    public Text IpInfo; 
+    public Text IpInfo;
     public Button buttonStartRecord;
     public Button buttonTakePicture;
     public Button buttonStopRecord;
@@ -61,24 +67,25 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
     private Delegate[] delegates;
     public void Awake()
     {
-        AppConfig.Instance.LoadConfig(MEHoloConstant.NetworkConfigFile); 
-        AlbumURL = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile,"Server_Host","127.0.0.1");
+        AppConfig.Instance.LoadConfig(MEHoloConstant.NetworkConfigFile);
+        AlbumURL = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
         serverPort = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Port", "8848"));
         listAlbumProfileName = new List<string>();
         IpInfo.text = AlbumURL;
         //注册按钮
-        EventTriggerListener.Get(buttonStartRecord.gameObject).onClick = RecordVideoStart;
-        EventTriggerListener.Get(buttonStopRecord.gameObject).onClick = RecordVideoStop;
-        EventTriggerListener.Get(buttonTakePicture.gameObject).onClick = TakePicture;
+        ETListener.Get(buttonStartRecord.gameObject).onClick = RecordVideoStart;
+        ETListener.Get(buttonStopRecord.gameObject).onClick = RecordVideoStop;
+        ETListener.Get(buttonTakePicture.gameObject).onClick = TakePicture;
 
         uploadWorker = new BackgroundWorker();
         loadingImage.gameObject.SetActive(false);
     }
 
     // Use this for initialization
-    void Start () {
-        
-	}
+    void Start()
+    {
+
+    }
 
     /// <summary>
     /// 打开并刷新Live端Album窗口
@@ -97,11 +104,11 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
         uploadWorker.StopWorker();
         loadingImage.gameObject.SetActive(false);
         albumProfileDropdown.Hide();
-        if (ProfileDropdown.transform.FindChild("Dropdown List") != null)
+        if (ProfileDropdown.transform.Find("Dropdown List") != null)
         {
-            Destroy(ProfileDropdown.transform.FindChild("Dropdown List").gameObject);
+            Destroy(ProfileDropdown.transform.Find("Dropdown List").gameObject);
         }
-        this.gameObject.SetActive(false); 
+        this.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -110,7 +117,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
     /// <returns></returns>
     private IEnumerator LoadAlbumProfileNameData()
     {
-        WWW downloadAlbumProfileData = new WWW("http://" + AlbumURL +":"+ serverPort.ToString()+ "/me/social/album/list");
+        WWW downloadAlbumProfileData = new WWW("http://" + AlbumURL + ":" + serverPort.ToString() + "/me/social/album/list");
         yield return downloadAlbumProfileData;
         if (downloadAlbumProfileData.error != null)
         {
@@ -119,8 +126,9 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
         else
         {
             string albumListJson = downloadAlbumProfileData.text;
+            Debug.Log(albumListJson);
             JsonData jsonData = JsonUtility.FromJson<JsonData>(albumListJson);
-            
+
             listAlbumProfileName.Clear();
             for (int i = 0; i < jsonData.data.Length; i++)
             {
@@ -148,32 +156,25 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
 
     private void RecordVideoStart(GameObject obj)
     {
-        if (liveMainPannel.Recording)
-        {
-            SetStatusErrorText("正在录像,不能启动");
-        }
-        else
-        {
-            liveMainPannel.Recording = true;
-            buttonStartRecord.gameObject.SetActive(false);
-            buttonStopRecord.gameObject.SetActive(true);
-            LiveController.Instance.StartCapture();
 
-            StartCoroutine(WaitAndExcet(RecordVideoStop, recordTime));
-        }
+        buttonStartRecord.gameObject.SetActive(false);
+        buttonStopRecord.gameObject.SetActive(true);
+        LiveController.Instance.StartCapture();
+
+        StartCoroutine(WaitAndExcet(RecordVideoStop, recordTime));
+
     }
     private void RecordVideoStop(GameObject obj)
     {
-        if (liveMainPannel.Recording)
-        {
-            liveMainPannel.Recording = false;
-            buttonStartRecord.gameObject.SetActive(true);
-            buttonStopRecord.gameObject.SetActive(false);
-            LiveController.Instance.StopCapture(ref videoOutputPath, ref videoName);
-            Debug.Log("videoOutputPath : " + videoOutputPath + "  VideoName : " + videoName);
-            UploadFileType filetype = UploadFileType.Video;
-            StartCoroutine(CheckAndUpload(videoOutputPath, videoName + ".mp4", filetype));
-        }
+
+        //  liveMainPannel.Recording = false;
+        buttonStartRecord.gameObject.SetActive(true);
+        buttonStopRecord.gameObject.SetActive(false);
+        LiveController.Instance.StopCapture(ref videoOutputPath, ref videoName);
+        Debug.Log("videoOutputPath : " + videoOutputPath + "  VideoName : " + videoName);
+        UploadFileType filetype = UploadFileType.Video;
+        StartCoroutine(CheckAndUpload(videoOutputPath, videoName + ".mp4", filetype));
+
     }
     private void TakePicture(GameObject obj)
     {
@@ -184,13 +185,13 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
             return;
         }
         UploadFileType fileType = UploadFileType.Image;
-        StartCoroutine(CheckAndUpload(imageOutputPath,imageName,fileType));
+        StartCoroutine(CheckAndUpload(imageOutputPath, imageName, fileType));
     }
 
     /// <summary>
     /// 检查文件是否已保存成功，在3s内检查到保存的文件才会进行上传操作
     /// </summary>
-    private IEnumerator CheckAndUpload(string outputPath,string name,UploadFileType fileType)
+    private IEnumerator CheckAndUpload(string outputPath, string name, UploadFileType fileType)
     {
         Debug.Log("CheckUpload!!!!");
         if (GetCurrentAlbumProfileName() == null)
@@ -200,7 +201,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
         }
 
         float checkTime = 0;
-        while (!File.Exists(outputPath + name) && checkTime<limitTime)
+        while (!File.Exists(outputPath + name) && checkTime < limitTime)
         {
             checkTime += 0.1f;
             yield return new WaitForSeconds(0.1f);
@@ -276,7 +277,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
     /// <summary>
     /// 取得当前下拉列表的名字
     /// </summary>
-    public string GetCurrentAlbumProfileName() 
+    public string GetCurrentAlbumProfileName()
     {
         string currentProfileName = albumProfileDropdown.captionText.text;
         if (currentProfileName != null && currentProfileName != "")
@@ -300,16 +301,16 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
 
     public void OnPointerClick(PointerEventData data)
     {
-        albumProfileDropdown.Hide(); 
+        albumProfileDropdown.Hide();
     }
 
 
     object cbtapAction;
     private void ButtonEnter(GameObject obj)
     {
-        if(MultiInputManager.Instance.cbTap!=null)
+        if (MultiInputManager.Instance.cbTap != null)
         {
-            cbtapAction = MultiInputManager.Instance.cbTap.Clone();
+            cbtapAction = MultiInputManager.Instance.cbTap;
         }
         MultiInputManager.Instance.cbTap = null;
     }
@@ -337,7 +338,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour , IPointerEnterHandler , IPoin
         albumProfileDropdown.Hide();
     }
 
-    private IEnumerator WaitAndExcet(Action<GameObject> action , float waitTime)
+    private IEnumerator WaitAndExcet(Action<GameObject> action, float waitTime)
     {
         yield return new WaitForSeconds(waitTime);
 

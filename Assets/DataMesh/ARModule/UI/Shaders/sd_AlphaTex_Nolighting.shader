@@ -7,6 +7,7 @@ Shader "Custom/sd_AlphaTex_Nolighting"
 		_Color("Color", Color) = (1,1,1,1)
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
 			_Emission("Emission",Range(0,1)) = 0.4
+				_Alpha("Alpha",Range(0,1)) = 1
 	}
 	SubShader
 	{
@@ -26,6 +27,7 @@ Shader "Custom/sd_AlphaTex_Nolighting"
 		fixed4 _Color;
 		half _TotalAlpha;
 		fixed _Emission;
+		fixed _Alpha;
 
 		struct Input 
 		{
@@ -49,7 +51,7 @@ Shader "Custom/sd_AlphaTex_Nolighting"
 		{
 			fixed4 c;
 			c.rgb = s.Albedo;
-			c.a = s.Alpha;		
+			c.a = s.Alpha*_Alpha;		
 			return c;
 		}
 		ENDCG

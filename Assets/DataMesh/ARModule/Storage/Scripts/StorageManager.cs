@@ -200,22 +200,13 @@ namespace DataMesh.AR.Storage
                 GetDirectorScriptList(curPage, countPerPage, cbFinish);
         }
 
-#if UNITY_WSA && !UNITY_EDITOR
         private async void GetAssetList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#else
-        private void GetAssetList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#endif
         {
             Page<Asset> pageResult = null;
             // 加载数据 
             try
             {
-#if UNITY_WSA && !UNITY_EDITOR
                 pageResult = await assetAPI.ListAssets(MEHoloEntrance.Instance.AppID, currentPlatform, page, countPerPage);
-#else
-                pageResult = assetAPI.ListAssets(MEHoloEntrance.Instance.AppID, currentPlatform, page, countPerPage);
-
-#endif
             }
             catch (System.Exception e)
             {
@@ -255,22 +246,13 @@ namespace DataMesh.AR.Storage
         }
 
 
-#if UNITY_WSA && !UNITY_EDITOR
         private async void GetRecordList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#else
-        private void GetRecordList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#endif
         {
             Page<Recording> pageResult = null;
             // 加载数据 
             try
             {
-#if UNITY_WSA && !UNITY_EDITOR
                 pageResult = await recordingAPI.ListRecordings(MEHoloEntrance.Instance.AppID, page, countPerPage);
-#else
-                pageResult = recordingAPI.ListRecordings(MEHoloEntrance.Instance.AppID, page, countPerPage);
-
-#endif
             }
             catch (System.Exception e)
             {
@@ -308,22 +290,13 @@ namespace DataMesh.AR.Storage
             });
         }
 
-#if UNITY_WSA && !UNITY_EDITOR
         private async void GetDirectorScriptList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#else
-        private void GetDirectorScriptList(int page, int countPerPage, System.Action<bool, string> cbFinish)
-#endif
         {
             Page<DirectorScript> pageResult = null;
             // 加载数据 
             try
             {
-#if UNITY_WSA && !UNITY_EDITOR
                 pageResult = await directorAPI.ListScripts(MEHoloEntrance.Instance.AppID, null, page, countPerPage);
-#else
-                pageResult = directorAPI.ListScripts(MEHoloEntrance.Instance.AppID, null , page, countPerPage);
-
-#endif
             }
             catch (System.Exception e)
             {
@@ -414,11 +387,7 @@ namespace DataMesh.AR.Storage
             public string hash;
         }
 
-#if UNITY_WSA && !UNITY_EDITOR
         private async void QueryAssetHash(Dictionary<string, StorageManager.DownloadAssetInfo> infoList, System.Action<Dictionary<string, StorageManager.DownloadAssetInfo>> OnQueryFinish)
-#else
-        private void QueryAssetHash(Dictionary<string, DownloadAssetInfo> infoList, System.Action<Dictionary<string, DownloadAssetInfo>> OnQueryFinish)
-#endif
         {
             // 先连接server，检查所有Asset对应当前平台的文件Hash，并回填数据 
             string[] assetIds = new string[infoList.Count];
@@ -430,11 +399,7 @@ namespace DataMesh.AR.Storage
             }
             try
             {
-#if UNITY_WSA && !UNITY_EDITOR
                 List<Asset> queryRs = await assetAPI.ListAssetsByIds(assetIds, currentPlatform);
-#else
-                List<Asset> queryRs = assetAPI.ListAssetsByIds(assetIds, currentPlatform);
-#endif
                 Debug.Log("Query find [" + queryRs.Count + "] assets!");
                 for (int i = 0;i < queryRs.Count;i ++)
                 {

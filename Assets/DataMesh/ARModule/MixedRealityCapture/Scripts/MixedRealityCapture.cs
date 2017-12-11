@@ -126,7 +126,7 @@ namespace DataMesh.AR.MRC {
                 for (int i = 0; i < maxReconnectCount; i++)
                 {
                     yield return www.Send();
-                    sendSuccess = !(www.isError);
+                    sendSuccess = !(www.isNetworkError);
                     if (sendSuccess)
                     {
                         //ReadWrite.Instance.FileDelete(filepath);

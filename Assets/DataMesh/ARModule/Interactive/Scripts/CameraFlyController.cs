@@ -70,9 +70,12 @@ namespace DataMesh.AR.Interactive
 
             for (int i = 0; i < followedObjects.Count; i++)
             {
-                Transform trans = followedObjects[i];
-                trans.rotation = tr.rotation;
-                trans.position = tr.position;
+                if(followedObjects[i]!=null)
+                {
+                    Transform trans = followedObjects[i];
+                    trans.rotation = tr.rotation;
+                    trans.position = tr.position;
+                }
             }
         }
     }

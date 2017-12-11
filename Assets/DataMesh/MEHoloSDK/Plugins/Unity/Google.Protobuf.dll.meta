@@ -3,16 +3,21 @@ guid: 866007a2fa81f5941b5b5943e918106b
 timeCreated: 1498123135
 licenseType: Free
 PluginImporter:
-  serializedVersion: 1
+  externalObjects: {}
+  serializedVersion: 2
   iconMap: {}
   executionOrder: {}
   isPreloaded: 0
   isOverridable: 0
   platformData:
-    Android:
+  - first:
+      Android: Android
+    second:
       enabled: 1
       settings: {}
-    Any:
+  - first:
+      Any: 
+    second:
       enabled: 0
       settings:
         Exclude Android: 0
@@ -28,42 +33,89 @@ PluginImporter:
         Exclude Win64: 0
         Exclude WindowsStoreApps: 1
         Exclude iOS: 0
-    Editor:
+  - first:
+      Editor: Editor
+    second:
       enabled: 1
       settings:
         DefaultValueInitialized: true
-    Linux:
+  - first:
+      Facebook: WebGL
+    second:
       enabled: 1
       settings: {}
-    Linux64:
+  - first:
+      Facebook: Win
+    second:
       enabled: 1
       settings: {}
-    LinuxUniversal:
+  - first:
+      Facebook: Win64
+    second:
       enabled: 1
       settings: {}
-    OSXIntel:
+  - first:
+      Standalone: Linux
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: Linux64
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: LinuxUniversal
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: OSXIntel
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: OSXIntel64
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: OSXUniversal
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: Win
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      Standalone: Win64
+    second:
+      enabled: 1
+      settings:
+        CPU: 
+  - first:
+      WebGL: WebGL
+    second:
       enabled: 1
       settings: {}
-    OSXIntel64:
-      enabled: 1
-      settings: {}
-    OSXUniversal:
-      enabled: 1
-      settings: {}
-    WebGL:
-      enabled: 1
-      settings: {}
-    Win:
-      enabled: 1
-      settings: {}
-    Win64:
-      enabled: 1
-      settings: {}
-    WindowsStoreApps:
+  - first:
+      Windows Store Apps: WindowsStoreApps
+    second:
       enabled: 0
       settings:
         CPU: AnyCPU
-    iOS:
+  - first:
+      iPhone: iOS
+    second:
       enabled: 1
       settings: {}
   userData: 

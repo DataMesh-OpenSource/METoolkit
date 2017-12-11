@@ -49,7 +49,7 @@ namespace DataMesh.AR.SpectatorView
 
         public void TurnOn()
         {
-            panel.spectatorViewHololensPanel.OnOpenStatusPanel(null);
+            //panel.spectatorViewHololensPanel.OnOpenStatusPanel(null);
 
             hasTurnOn = true;
         }
@@ -620,7 +620,8 @@ namespace DataMesh.AR.SpectatorView
                 return false;
             }
             return true;
-        }
+        }
+
 
         public WWW GET(string url, Dictionary<string, string> headers, System.Action<string> onComplete, System.Action<string> onError)
         {
@@ -772,7 +773,7 @@ namespace DataMesh.AR.SpectatorView
 
             if (curTime - checkBatteryTime > checkBatteryInterval)
             {
-                GetBatteryStatus();
+                //GetBatteryStatus();
                 checkBatteryTime = curTime;
             }
         }
