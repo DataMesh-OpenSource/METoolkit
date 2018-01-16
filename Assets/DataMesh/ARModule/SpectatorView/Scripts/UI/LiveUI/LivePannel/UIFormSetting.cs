@@ -46,6 +46,7 @@ namespace DataMesh.AR.SpectatorView
         public void CloseThisUIForm(GameObject obj)
         {
             CloseUIForm();
+            MultiInputManager.Instance.cbTap = (Action<int>)cbTapAction;
         }
 
         public void Exit(GameObject obj)

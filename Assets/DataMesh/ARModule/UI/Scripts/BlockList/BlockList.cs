@@ -12,20 +12,27 @@ namespace DataMesh.AR.UI
     {
         public GameObject itemPrefab;
         public GameObject grid;
+        public Text titleText;
         public Text pageText;
         public GameObject loadingObj;
         public GazeEventReceiver prevReceiver;
         public GazeEventReceiver nextReceiver;
         public GazeEventReceiver closeReceiver;
+        public GazeEventReceiver backReceiver;
 
         public int CountX = 3;
-        public int CountY = 4;
+        public int CountY = 3;
+
+        public bool showCloseButton = true;
+        public bool showBackButton = false;
 
         public TransitObject showItemTransit;
         public TransitObject showPanelTransit;
 
         [HideInInspector]
         public System.Action CallbackClose;
+        [HideInInspector]
+        public System.Action CallbackBack;
 
         /// <summary>
         /// 所有的格子，以列表长宽来决定
@@ -60,6 +67,7 @@ namespace DataMesh.AR.UI
 
         [HideInInspector]
         public bool isChangingPage = false;
+        public bool isShow = false;
 
         public void Init()
         {
@@ -89,9 +97,29 @@ namespace DataMesh.AR.UI
             nextReceiver.cbExit = OnButtonExit;
             nextReceiver.cbTap = OnTapNext;
 
-            closeReceiver.cbEnter = OnButtonEnter;
-            closeReceiver.cbExit = OnButtonExit;
-            closeReceiver.cbTap = OnTapClose;
+            if (showCloseButton)
+            {
+                closeReceiver.gameObject.SetActive(true);
+                closeReceiver.cbEnter = OnButtonEnter;
+                closeReceiver.cbExit = OnButtonExit;
+                closeReceiver.cbTap = OnTapClose;
+            }
+            else
+            {
+                closeReceiver.gameObject.SetActive(false);
+            }
+
+            if (showBackButton)
+            {
+                backReceiver.gameObject.SetActive(true);
+                backReceiver.cbEnter = OnButtonEnter;
+                backReceiver.cbExit = OnButtonExit;
+                backReceiver.cbTap = OnTapBack;
+            }
+            else
+            {
+                backReceiver.gameObject.SetActive(false);
+            }
 
             loadingObj.SetActive(false);
             prevReceiver.gameObject.SetActive(false);
@@ -100,7 +128,7 @@ namespace DataMesh.AR.UI
             pageText.text = "";
 
             gameObject.SetActive(false);
-
+            isShow = false;
         }
 
 
@@ -125,6 +153,11 @@ namespace DataMesh.AR.UI
 
         #endregion
 
+        public void SetTitle(string title)
+        {
+            titleText.text = title;
+        }
+
         public void SetUISize(Vector3 pos, Vector3 forward, float scale)
         {
 
@@ -137,30 +170,59 @@ namespace DataMesh.AR.UI
 
         public void Show()
         {
-            IsBusy = true;
-            showPanelTransit.transit(true, ()=> { IsBusy = false; });
+            if (isShow)
+                return;
 
-            for (int i = 0; i < itemList.Count; i++)
+            isShow = true;
+            IsBusy = true;
+
+            if (showPanelTransit != null)
             {
-                BlockListItem item = itemList[i];
-                item.showTransit.resetTransit(true);
-                item.gameObject.SetActive(false);
+                showPanelTransit.transit(true, () => { IsBusy = false; });
+                if (showItemTransit != null)
+                {
+                    for (int i = 0; i < itemList.Count; i++)
+                    {
+                        BlockListItem item = itemList[i];
+                        item.showTransit.resetTransit(true);
+                        item.gameObject.SetActive(false);
+                    }
+                }
             }
+            else
+            {
+                gameObject.SetActive(true);
+                IsBusy = false;
+            }
+
+
         }
 
         public void Hide()
         {
-            IsBusy = true;
-            showPanelTransit.transit(false, () => { IsBusy = false; });
+            if (!isShow)
+                return;
 
-            for (int i = 0;i < itemList.Count;i ++)
+            isShow = false;
+            IsBusy = true;
+            if (showPanelTransit != null)
             {
-                BlockListItem item = itemList[i];
-                if (item.gameObject.activeSelf)
+                showPanelTransit.transit(false, () => { IsBusy = false; });
+                for (int i = 0; i < itemList.Count; i++)
                 {
-                    item.showTransit.transit(false, null);
+                    BlockListItem item = itemList[i];
+                    if (item.gameObject.activeSelf)
+                    {
+                        item.showTransit.transit(false, null);
+                    }
                 }
             }
+            else
+            {
+                gameObject.SetActive(false);
+                IsBusy = false;
+            }
+
         }
 
         public void ShowLoading()
@@ -194,6 +256,9 @@ namespace DataMesh.AR.UI
             if (IsBusy)
                 return;
 
+            if (isChangingPage)
+                return;
+
             TransitObject.StartTransit(obj, 2, true);
             if (curPage > 1 && cbChangePage != null)
                 cbChangePage(curPage - 1);
@@ -201,6 +266,9 @@ namespace DataMesh.AR.UI
         private void OnTapNext(GameObject obj)
         {
             if (IsBusy)
+                return;
+
+            if (isChangingPage)
                 return;
 
             TransitObject.StartTransit(obj, 2, true);
@@ -215,6 +283,15 @@ namespace DataMesh.AR.UI
 
             if (CallbackClose != null)
                 CallbackClose();
+        }
+
+        private void OnTapBack(GameObject obj)
+        {
+            if (IsBusy)
+                return;
+
+            if (CallbackBack != null)
+                CallbackBack();
         }
 
         public void OnClick(BlockListItem item)
@@ -304,14 +381,19 @@ namespace DataMesh.AR.UI
                 }
             }
 
-            showItemTransit.transit(false, HideOK);
-
             pageText.text = "" + curPage + " / " + pageCount;
 
             if (pageCount > 1)
             {
-                prevReceiver.gameObject.SetActive(true);
-                nextReceiver.gameObject.SetActive(true);
+                if (page > 1)
+                    prevReceiver.gameObject.SetActive(true);
+                else
+                    prevReceiver.gameObject.SetActive(false);
+
+                if (page < pageCount)
+                    nextReceiver.gameObject.SetActive(true);
+                else
+                    nextReceiver.gameObject.SetActive(false);
             }
             else
             {
@@ -319,28 +401,59 @@ namespace DataMesh.AR.UI
                 nextReceiver.gameObject.SetActive(false);
             }
 
+            if (showItemTransit != null)
+                showItemTransit.transit(false, HideOK);
+            else
+            {
+                HideOK();
+            }
+
         }
 
         private void HideOK()
         {
-            int count = dataList.Count;
-            for (int i = 0; i < countPerPage; i++)
+            if (showItemTransit != null)
             {
-                BlockListItem item = itemList[i];
-                if (i < count)
+                int count = dataList.Count;
+                for (int i = 0; i < countPerPage; i++)
                 {
-                    item.showTransit.delayTime = Random.Range(0f, 0.4f);
-                    item.showTransit.transitGroup = 0;
-                    item.data = dataList[i];
-                }
-                else
-                {
-                    item.showTransit.transitGroup = 999;
+                    BlockListItem item = itemList[i];
+                    if (i < count)
+                    {
+                        item.gameObject.SetActive(false);
+                        item.showTransit.delayTime = Random.Range(0f, 0.4f);
+                        item.showTransit.transitGroup = 0;
+                        item.data = dataList[i];
+                    }
+                    else
+                    {
+                        item.showTransit.transitGroup = 999;
+                    }
                 }
 
+                showItemTransit.transit(true, () => { isChangingPage = false; });
+            }
+            else
+            {
+                int count = dataList.Count;
+                for (int i = 0; i < countPerPage; i++)
+                {
+                    BlockListItem item = itemList[i];
+                    if (i < count)
+                    {
+                        item.data = dataList[i];
+                        item.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        item.gameObject.SetActive(false);
+                    }
+
+                }
+                isChangingPage = false;
             }
 
-            showItemTransit.transit(true, () => { isChangingPage = false; });
+
 
         }
 

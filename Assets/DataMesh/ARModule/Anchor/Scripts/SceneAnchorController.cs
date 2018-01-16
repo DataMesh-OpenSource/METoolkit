@@ -210,6 +210,20 @@ namespace DataMesh.AR.Anchor
         }
 
         /// <summary>
+        /// 选择一个anchor时的回调
+        /// </summary>
+        private System.Action<AnchorObjectInfo> cbSelectAnchor;
+        public void AddCallbackSelectAnchor(System.Action<AnchorObjectInfo> cb) { cbSelectAnchor += cb; }
+        public void RemoveCallbackSelectAnchor(System.Action<AnchorObjectInfo> cb) { cbSelectAnchor -= cb; }
+
+        /// <summary>
+        /// 不再选择任何anchor时的回调
+        /// </summary>
+        private System.Action cbSelectNone;
+        public void AddCallbackSelectNone(System.Action cb) { cbSelectNone += cb; }
+        public void RemoveCallbackSelectNone(System.Action cb) { cbSelectNone -= cb; }
+
+        /// <summary>
         /// 对anchor操作全部完成后触发的回调，以便通知使用者，操作已经完成
         /// </summary>
         private System.Action cbAnchorControlFinish;
@@ -223,14 +237,17 @@ namespace DataMesh.AR.Anchor
         public void AddCallbackTurnOn(System.Action cb) { cbTurnOn += cb; }
         public void RemoveCallbackTurnOn(System.Action cb) { cbTurnOn -= cb; }
 
-
-
         /// <summary>
         /// 关闭调正时的回调 
         /// </summary>
         private System.Action cbTurnOff;
         public void AddCallbackTurnOff(System.Action cb) { cbTurnOff += cb; }
         public void RemoveCallbackTurnOff(System.Action cb) { cbTurnOff -= cb; }
+
+        /// <summary>
+        /// 如果为true，则在点击空白处时停止调整
+        /// </summary>
+        private bool isAutoFinish = true;
 
         protected WorldAnchorStore anchorStore;
         protected SpatialMappingManager spatialMappingManager;
@@ -252,6 +269,8 @@ namespace DataMesh.AR.Anchor
         private bool originNeedAssistKey;
 
         public Camera markCamera;
+        [HideInInspector]
+        public bool useMarkCamera = false;
         private Transform mainCameraTrans;
         private float nearPlane, farPlane;
         private float fovHorizonTan;
@@ -420,6 +439,11 @@ namespace DataMesh.AR.Anchor
             markCamera.cullingMask = markLayer | LayerMask.GetMask("UI");
         }
 
+        public void SetAutoFinish(bool b)
+        {
+            isAutoFinish = b;
+        }
+
         /// <summary>
         /// 真正投入使用。callback将会在调整完成之后触发
         /// </summary>
@@ -432,9 +456,10 @@ namespace DataMesh.AR.Anchor
             anchorMarkRoot.SetActive(true);
             BindGazeManager(true);
 
-            markCamera.gameObject.SetActive(true);
+            if (useMarkCamera)
+                markCamera.gameObject.SetActive(true);
 
-            spatialMappingManager.DrawVisualMeshes = true;
+            //spatialMappingManager.DrawVisualMeshes = true;
 
             // 打开anchor追踪 
             ShowAnchorArrow();
@@ -449,6 +474,21 @@ namespace DataMesh.AR.Anchor
         /// </summary>
         protected override void _TurnOff()
         {
+            if (currentAnchorInfo != null)
+            {
+                if (isFitting)
+                {
+                    StopFit();
+                }
+
+                ChangeAdjustType(SpatialAdjustType.None);
+                //currentAnchorInfo.mark.SetAdjustType(AnchorAdjestType.None);
+                currentAnchorInfo.mark.SetMarkSelected(false);
+                StopAdjust(currentAnchorInfo);
+            }
+
+            currentAnchorInfo = null;
+
             anchorMarkRoot.SetActive(false);
             BindGazeManager(false);
 
@@ -481,6 +521,7 @@ namespace DataMesh.AR.Anchor
                 inputManager.cbManipulationUpdate += OnManipulationUpdate;
                 inputManager.cbManipulationEnd += OnManipulationEnd;
 
+                // 因为调整时可能有UI，所以先不做操作保护了 
                 originInputLayer = inputManager.layerMask;
                 SetLayerMask(LayerMaskType.AnchorMark);
 
@@ -500,6 +541,7 @@ namespace DataMesh.AR.Anchor
                 inputManager.cbManipulationUpdate -= OnManipulationUpdate;
                 inputManager.cbManipulationEnd -= OnManipulationEnd;
 
+                // 因为调整时可能有UI，所以先不做操作保护了 
                 inputManager.layerMask = originInputLayer;
                 inputManager.needAssistKey = originNeedAssistKey;
             }
@@ -515,10 +557,10 @@ namespace DataMesh.AR.Anchor
             switch (type)
             {
                 case LayerMaskType.AnchorMark:
-                    inputManager.layerMask = markLayer;
+                    inputManager.layerMask = originInputLayer | markLayer;
                     break;
                 case LayerMaskType.Spacial:
-                    inputManager.layerMask = SpatialMappingManager.Instance.LayerMask;
+                    inputManager.layerMask = originInputLayer | SpatialMappingManager.Instance.LayerMask;
                     break;
                 case LayerMaskType.None:
                     inputManager.layerMask = 0;
@@ -694,6 +736,9 @@ namespace DataMesh.AR.Anchor
             if (info.anchor != null)
                 return;
 
+            if (info.rootTrans == null)
+                return;
+
             Debug.Log("Create Anchor for [" + info.anchorName + "]");
 
             WorldAnchor anchor = info.rootTrans.gameObject.AddComponent<WorldAnchor>();
@@ -719,6 +764,33 @@ namespace DataMesh.AR.Anchor
         }
 
         /// <summary>
+        /// 根据名称删除一个Anchor信息。会删除所有绑定物体上的WorldAnchor组件，并清空info信息
+        /// 但是不会删除存盘信息
+        /// </summary>
+        /// <param name="anchorName"></param>
+        public void ClearAnchorInfoByName(string anchorName, bool removeRootObject = false)
+        {
+            for (int i = 0;i <anchorObjectList.Count;i ++)
+            {
+                AnchorObjectInfo info = anchorObjectList[i];
+                if (info.anchorName == anchorName)
+                {
+                    RemoveAnchor(info);
+
+                    if (removeRootObject)
+                    {
+                        GameObject.DestroyImmediate(info.rootTrans.gameObject);
+                    }
+
+                    info.Clear();
+
+                    anchorObjectList.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// 放弃所有Anchor信息，会删除所有绑定物体上的WorldAnchor组件，并清空info信息
         /// 但是不会删除存盘信息
         /// </summary>
@@ -729,12 +801,12 @@ namespace DataMesh.AR.Anchor
                 AnchorObjectInfo info = anchorObjectList[i];
                 RemoveAnchor(info);
 
-                info.Clear();
-
                 if (removeRootObject)
                 {
                     GameObject.DestroyImmediate(info.rootTrans.gameObject);
                 }
+
+                info.Clear();
             }
             anchorObjectList.Clear();
         }
@@ -1085,7 +1157,6 @@ namespace DataMesh.AR.Anchor
             if (currentAnchorInfo != null)
             {
                 ChangeAdjustType(SpatialAdjustType.None);
-                //currentAnchorInfo.mark.SetAdjustType(AnchorAdjestType.None);
                 currentAnchorInfo.mark.SetMarkSelected(false);
                 StopAdjust(currentAnchorInfo);
             }
@@ -1093,6 +1164,9 @@ namespace DataMesh.AR.Anchor
             if (mark == null)
             {
                 currentAnchorInfo = null;
+
+                if (cbSelectNone != null)
+                    cbSelectNone();
                 return;
             }
 
@@ -1104,6 +1178,9 @@ namespace DataMesh.AR.Anchor
                     currentAnchorInfo = info;
 
                     currentAnchorInfo.mark.SetMarkSelected(true);
+
+                    if (cbSelectAnchor != null)
+                        cbSelectAnchor(info);
 
                     StartAdjust(currentAnchorInfo);
                     break;
@@ -1125,7 +1202,8 @@ namespace DataMesh.AR.Anchor
                 }
                 else
                 {
-                    FinishAdjust();
+                    if (isAutoFinish)
+                        FinishAdjust();
                 }
             }
             else
@@ -1178,9 +1256,9 @@ namespace DataMesh.AR.Anchor
             info.definition.startLock = true;
 
             //info.mark.followRoot = false;
-#if !ME_LIVE_ACTIVE
+
             info.mark.ShowTips();
-#endif
+
             VuforiaManager.Instance.TurnOn();
 
         }
@@ -1202,6 +1280,9 @@ namespace DataMesh.AR.Anchor
             //info.mark.followRoot = true;
         }
 
+        /// <summary>
+        /// 停止
+        /// </summary>
         private void FinishAdjust()
         {
             currentAnchorInfo = null;
@@ -1271,9 +1352,8 @@ namespace DataMesh.AR.Anchor
             spatialMappingManager.DrawVisualMeshes = false;
             SetLayerMask(LayerMaskType.AnchorMark);
 
-#if !ME_LIVE_ACTIVE
             currentAnchorInfo.mark.ShowTips();
-#endif
+
             ChangeAdjustType(SpatialAdjustType.None);
 
         }
@@ -1386,9 +1466,9 @@ namespace DataMesh.AR.Anchor
             isNav = false;
             if (currentAnchorInfo == null)
                 return;
-            #if !ME_LIVE_ACTIVE
+
             currentAnchorInfo.mark.ShowTips();
-#endif
+
             if (spatialAdjustType == SpatialAdjustType.Move)
             {
                 currentAnchorInfo.mark.ShowMoveAxis(Vector3.one);
@@ -1400,9 +1480,9 @@ namespace DataMesh.AR.Anchor
             isNav = false;
             if (currentAnchorInfo == null)
                 return;
-            #if !ME_LIVE_ACTIVE
+
             currentAnchorInfo.mark.ShowTips();
-#endif
+
         }
 
 
@@ -1412,12 +1492,7 @@ namespace DataMesh.AR.Anchor
             {
                 AnchorObjectInfo info = anchorObjectList[i];
                 if (b)
-                {
-                    #if !ME_LIVE_ACTIVE
                     info.mark.ShowTips();
-#endif
-                }
-                    
                 else
                     info.mark.HideTips();
             }

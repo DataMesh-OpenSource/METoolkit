@@ -37,6 +37,7 @@ public class MEHoloEntranceEditor : Editor
             {
                 holoRoot = new GameObject("MEHolo");
 
+                InstantiatePrefabToParent(entrance.AccountPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.CommonPrefab, holoRoot.transform);
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
                 InstantiatePrefabToParent(entrance.AnchorPrefab, holoRoot.transform);
@@ -46,6 +47,7 @@ public class MEHoloEntranceEditor : Editor
                 InstantiatePrefabToParent(entrance.UIPerfab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.CollaborationPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.StoragePrefab, holoRoot.transform);
+                InstantiatePrefabToParent(entrance.LibraryPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.SocialPrefab, holoRoot.transform);
                 InstantiatePrefabToParent(entrance.LivePrefab, holoRoot.transform);
 
@@ -99,6 +101,8 @@ public class MEHoloEntranceEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.Space();
 
+        entrance.NeedInput = EditorGUILayout.Toggle("If Need Account:", entrance.NeedAccount);
+
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
         entrance.NeedAnchor = EditorGUILayout.Toggle("If Need Anchor:", entrance.NeedAnchor);
         if (entrance.NeedAnchor)
@@ -111,6 +115,7 @@ public class MEHoloEntranceEditor : Editor
         entrance.NeedUI = EditorGUILayout.Toggle("If Need UI:", entrance.NeedUI);
         entrance.NeedCollaboration = EditorGUILayout.Toggle("If Need Collaboration:", entrance.NeedCollaboration);
         entrance.NeedStorage = EditorGUILayout.Toggle("If Need Storage:", entrance.NeedStorage);
+        entrance.NeedStorage = EditorGUILayout.Toggle("If Need Library:", entrance.NeedLibrary);
         entrance.NeedSpeech = EditorGUILayout.Toggle("If Need Speech:", entrance.NeedSpeech);
         entrance.NeedSocial = EditorGUILayout.Toggle("If Need Social:", entrance.NeedSocial);
 

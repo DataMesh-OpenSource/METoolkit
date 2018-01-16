@@ -3,27 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DataMesh.AR.Interactive;
-using DataMesh.AR.UI;
 
 namespace DataMesh.AR.UI
 {
     public class BlockListItem : MonoBehaviour
     {
-        public const float ITEM_WIDTH = 110;
-        public const float ITEM_HEIGHT = 110;
+        public const float ITEM_WIDTH = 150;
+        public const float ITEM_HEIGHT = 150;
 
-        public RawImage iconImage;
-        public Text nameText;
 
-        public Image border;
-
-        public TweenerGroupTransitObject focusTransit;
+        //public TweenerGroupTransitObject focusTransit;
         public TweenerGroupTransitObject showTransit;
         public TweenerGroupTransitObject clickTransit;
 
-        private Texture defaultIcon;
+        public Image border;
 
-        private BlockListData _data;
+        protected BlockListData _data;
         public BlockListData data
         {
             get { return _data; }
@@ -37,60 +32,27 @@ namespace DataMesh.AR.UI
             }
         }
 
-        private BlockList parent;
+        protected BlockList parent;
 
-        private bool hasInit = false;
+        protected bool hasInit = false;
 
-        private bool focus = false;
+        protected bool focus = false;
 
-        private MultiInputManager inputManager;
+        protected MultiInputManager inputManager;
 
-        private bool needLoadImage = false;
+        protected bool needLoadImage = false;
 
-        private void Refresh()
-        {
-            if (_data != null)
-            {
-                // name
-                nameText.text = _data.name;
-
-                // icon
-                iconImage.texture = defaultIcon;
-                if (data.icon != null)
-                {
-                    needLoadImage = true;
-                }
-
-                border.gameObject.SetActive(false);
-            }
-        }
-
-        private IEnumerator LoadIcon(string iconUrl)
-        {
-            Debug.Log("load icon [" + iconUrl + "]");
-            WWW www = new WWW(iconUrl);
-            yield return www;
-
-            if (www.error == null)
-            {
-                Texture2D iconTex = new Texture2D(2,2);
-                iconTex.LoadImage(www.bytes);
-
-                iconImage.texture = iconTex;
-            }
-        }
 
         public void Init(BlockList list)
         {
             parent = list;
 
-            defaultIcon = iconImage.texture;
-
             inputManager = MultiInputManager.Instance;
+
+            border.gameObject.SetActive(false);
 
             Refresh();
             hasInit = true;
-
 
             gameObject.SetActive(false);
         }
@@ -105,42 +67,55 @@ namespace DataMesh.AR.UI
             showTransit.transit(false, cbFinish);
         }
 
+
+        void OnTapOnObject()
+        {
+            if (clickTransit != null)
+            {
+                parent.IsBusy = true;
+                clickTransit.transit(true, () =>
+                {
+                    parent.IsBusy = false;
+                    parent.OnClick(this);
+                }
+                );
+            }
+            else
+            {
+                parent.OnClick(this);
+            }
+        }
+
         // Update is called once per frame
-        void Update()
+        private void Update()
         {
             if (inputManager != null)
             {
                 if (!focus && inputManager.FocusedObject == gameObject)
                 {
-                    //focusTransit.transit(true, null);
                     border.gameObject.SetActive(true);
                     focus = true;
                 }
                 else if (focus && inputManager.FocusedObject != gameObject)
                 {
-                    //focusTransit.transit(false, null);
                     border.gameObject.SetActive(false);
                     focus = false;
                 }
             }
 
-            if (needLoadImage)
-            {
-                needLoadImage = false;
-                StopCoroutine("LoadIcon");
-                StartCoroutine(LoadIcon(data.icon));
-            }
+            _Update();
         }
 
-        void OnTapOnObject()
+
+        protected virtual void Refresh()
         {
-            parent.IsBusy = true;
-            clickTransit.transit(true, ()=>
-            {
-                parent.IsBusy = false;
-                parent.OnClick(this);
-            }
-            );
+            // 子类实现 
         }
+
+        protected virtual void _Update()
+        {
+
+        }
+
     }
 }

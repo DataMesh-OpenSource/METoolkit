@@ -150,6 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -168,6 +169,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList: []
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
   duration: 1
@@ -204,6 +208,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -222,6 +227,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList: []
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
   duration: 1
@@ -310,6 +318,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -328,6 +337,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList: []
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
   duration: 1
@@ -362,7 +374,7 @@ Canvas:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1424869431167954}
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_RenderMode: 2
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
@@ -371,7 +383,8 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_SortingLayerID: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_SortingLayerID: -717627047
   m_SortingOrder: 32100
   m_TargetDisplay: 0
 --- !u!224 &224243039959045638
@@ -381,7 +394,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1119991200788280}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.0038146973, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_Children: []
   m_Father: {fileID: 224456771306086306}
@@ -417,7 +430,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1714620881494630}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.0038146973, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_Children: []
   m_Father: {fileID: 224456771306086306}
@@ -435,7 +448,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1424869431167954}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.07959938, z: 0}
   m_LocalScale: {x: 0.00049999997, y: 0.00049999997, z: 0.00049999997}
   m_Children:
   - {fileID: 224290565336930388}

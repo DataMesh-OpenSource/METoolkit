@@ -77,11 +77,14 @@ namespace DataMesh.AR.Common
             inputDevices = new string[Microphone.devices.Length];
             deviceNum = Microphone.devices.Length - 1;
 
-            for (int i = 0; i < Microphone.devices.Length; i++)
-                inputDevices[i] = Microphone.devices[i].ToString();
+            if (deviceNum >= 0)
+            {
+                for (int i = 0; i < Microphone.devices.Length; i++)
+                    inputDevices[i] = Microphone.devices[i].ToString();
 
-            CurrentAudioInput = Microphone.devices[deviceNum].ToString();
-            if (CurrentAudioInput != string.Empty) audioEnabled = true;
+                CurrentAudioInput = Microphone.devices[deviceNum].ToString();
+                if (CurrentAudioInput != string.Empty) audioEnabled = true;
+            }
 
             //InvokeRepeating("Check", 0, 1.0f / 15.0f);
             StartCoroutine(StartRecord());

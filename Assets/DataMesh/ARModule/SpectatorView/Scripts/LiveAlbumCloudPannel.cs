@@ -236,7 +236,7 @@ public class LiveAlbumCloudPannel : MonoBehaviour, IPointerEnterHandler, IPointe
         string appId = MEHoloEntrance.Instance.AppID;
         string albumName = currentAlbumName;
         float uploadTime = 0;
-        UploadProgressApi uploadProgressApi = null;
+        UploadProgressApi<string> uploadProgressApi = null;
         try
         {
             if (fileType == UploadFileType.Image)

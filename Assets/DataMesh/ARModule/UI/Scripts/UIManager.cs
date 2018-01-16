@@ -11,6 +11,8 @@ namespace DataMesh.AR.UI
         public CursorController cursorController;
         public BlockListManager listManager;
 
+        public FloatKeyboard keyboard;
+
 
         protected override void _Init()
         {
@@ -38,6 +40,9 @@ namespace DataMesh.AR.UI
                 cursorController.TurnOff();
         }
 
+        public void ShowKeyboard()
+        {
+        }
 
     }
 }

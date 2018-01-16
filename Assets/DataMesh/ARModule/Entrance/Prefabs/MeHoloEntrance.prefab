@@ -51,9 +51,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69ffe1efb22f5a54187a98e231ddf4fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  AppID: Director
   CommonPrefab: {fileID: 1327194062710436, guid: f1e9736e23e323746b52699c08120889,
     type: 2}
   AnchorPrefab: {fileID: 1213177251853286, guid: a63734d788aa60e488ed79511a9643e2,
+    type: 2}
+  AccountPrefab: {fileID: 1765183772388446, guid: 97e2ce8c3186c5f4fa242d494743ed21,
     type: 2}
   InputPrefab: {fileID: 1331324292690694, guid: f1d4a397704663849abaa7ba51960901,
     type: 2}
@@ -64,15 +67,19 @@ MonoBehaviour:
     type: 2}
   StoragePrefab: {fileID: 1546448322227264, guid: 5c98267bb0eb2ca4699c80154c9be0a4,
     type: 2}
+  LibraryPrefab: {fileID: 1320284803934014, guid: 3937eb39449f91244838c3dbc0d89509,
+    type: 2}
   SocialPrefab: {fileID: 1830974446417084, guid: 89c0d4976c3d3914fb7eaf71b5a4cdd5,
     type: 2}
   LivePrefab: {fileID: 1597044963658734, guid: 649fced0e7f51de4080b624678e05793, type: 2}
+  NeedAccount: 1
   NeedAnchor: 1
   NeedInput: 1
   NeedSpeech: 1
   NeedUI: 1
   NeedCollaboration: 1
   NeedStorage: 1
+  NeedLibrary: 1
   NeedSocial: 1
   NeedLive: 1
   HasInit: 0

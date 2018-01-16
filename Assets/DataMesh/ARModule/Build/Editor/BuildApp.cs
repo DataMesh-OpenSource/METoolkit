@@ -74,8 +74,8 @@ public class BuildApp
         {
             group = BuildTargetGroup.WSA;
 
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.WSAPlayer);
-            EditorUserBuildSettings.wsaSDK = WSASDK.UWP;
+            EditorUserBuildSettings.SwitchActiveBuildTarget(group, BuildTarget.WSAPlayer);
+            //EditorUserBuildSettings.wsaSDK = WSASDK.UWP;
 
             if (targetPlatform == "HoloLens")
             {
@@ -104,9 +104,9 @@ public class BuildApp
         {
             group = BuildTargetGroup.Standalone;
 
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneWindows64);
+            EditorUserBuildSettings.SwitchActiveBuildTarget(group, BuildTarget.StandaloneWindows64);
 
-            PlayerSettings.apiCompatibilityLevel = ApiCompatibilityLevel.NET_2_0;
+            PlayerSettings.SetApiCompatibilityLevel(group, ApiCompatibilityLevel.NET_4_6);
 
             option.target = BuildTarget.StandaloneWindows64;
 

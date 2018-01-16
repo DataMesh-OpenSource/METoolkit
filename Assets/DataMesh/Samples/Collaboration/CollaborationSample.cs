@@ -3,7 +3,7 @@ using UnityEngine;
 using DataMesh.AR.Interactive;
 using DataMesh.AR.Network;
 using DataMesh.AR.UI;
-using MEHoloClient.Entities;
+using MEHoloClient.Core.Entities;
 using MEHoloClient.Proto;
 
 namespace DataMesh.AR.Samples.Collaboration

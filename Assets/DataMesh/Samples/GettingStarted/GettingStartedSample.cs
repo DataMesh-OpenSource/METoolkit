@@ -2,7 +2,7 @@
 using UnityEngine;
 using DataMesh.AR.Network;
 using DataMesh.AR;
-using MEHoloClient.Entities;
+using MEHoloClient.Core.Entities;
 using MEHoloClient.Proto;
  
 public class GettingStartedSample : MonoBehaviour, IMessageHandler

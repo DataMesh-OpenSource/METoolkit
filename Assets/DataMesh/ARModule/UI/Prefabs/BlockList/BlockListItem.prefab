@@ -73,9 +73,7 @@ GameObject:
   - component: {fileID: 4084526370300348}
   - component: {fileID: 114398374416609422}
   - component: {fileID: 114206947338836232}
-  - component: {fileID: 114579674944225150}
   - component: {fileID: 114713133954294122}
-  - component: {fileID: 114219478849410500}
   m_Layer: 5
   m_Name: Container
   m_TagString: Untagged
@@ -108,11 +106,10 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4662459620174070}
-  - component: {fileID: 114689593922631972}
   - component: {fileID: 114473456286186680}
-  - component: {fileID: 114904378241941686}
   - component: {fileID: 65625713145810570}
   - component: {fileID: 114384241146308492}
+  - component: {fileID: 114405111510123250}
   m_Layer: 5
   m_Name: BlockListItem
   m_TagString: Untagged
@@ -144,8 +141,8 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1941936507109202}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -140.9, y: 158.5, z: 0}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_Children:
   - {fileID: 4084526370300348}
   m_Father: {fileID: 0}
@@ -176,6 +173,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -200,30 +198,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  ignoreTimeScale: 1
-  delay: 0
-  duration: 0.4
-  steeperCurves: 0
-  tweenGroup: 0
-  curTime: 0
-  from: {x: 0, y: 0, z: 20}
-  to: {x: 0, y: 0, z: 0}
-  worldSpace: 0
---- !u!114 &114219478849410500
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1561710384443262}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75e7459110b9666449485c40f25362a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  method: 0
-  style: 0
-  animationCurve:
-    serializedVersion: 2
+  additionalAnimationCurveList:
+  - serializedVersion: 2
     m_Curve:
     - serializedVersion: 2
       time: 0
@@ -240,14 +216,38 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  - serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
-  duration: 0.1
+  duration: 0.4
   steeperCurves: 0
   tweenGroup: 0
   curTime: 0
-  from: {x: 1, y: 1, z: 1}
-  to: {x: 1, y: 1, z: 1}
+  from: {x: 0, y: 0, z: 20}
+  to: {x: 0, y: 0, z: 0}
+  tweenX: 1
+  tweenY: 1
+  tweenZ: 1
+  worldSpace: 0
+  UseAdditionalCurve: 0
 --- !u!114 &114384241146308492
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -287,6 +287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -305,6 +306,43 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList:
+  - serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  - serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
   duration: 0.2
@@ -313,6 +351,23 @@ MonoBehaviour:
   curTime: 0
   from: {x: 1, y: 1, z: 1}
   to: {x: 1.1, y: 1.1, z: 1.1}
+  UseAdditionalCurve: 0
+--- !u!114 &114405111510123250
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1941936507109202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5fd46ab31a7e3a40ae99cb44e7c968f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showTransit: {fileID: 114473456286186680}
+  clickTransit: {fileID: 114384241146308492}
+  border: {fileID: 114482213389502488}
+  iconImage: {fileID: 114981426507402656}
+  nameText: {fileID: 114981840787442084}
 --- !u!114 &114473456286186680
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -336,13 +391,11 @@ MonoBehaviour:
   delayTime: 0
   needResetBeforeTransit: 1
   transitInTweener:
-  - {fileID: 114206947338836232}
   - {fileID: 0}
+  - {fileID: 114398374416609422}
   - {fileID: 114724531148384806}
-  - {fileID: 114219478849410500}
   transitOutTweener:
-  - {fileID: 114713133954294122}
-  - {fileID: 114579674944225150}
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 114724531148384806}
 --- !u!114 &114482213389502488
@@ -372,62 +425,6 @@ MonoBehaviour:
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
---- !u!114 &114579674944225150
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1561710384443262}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75e7459110b9666449485c40f25362a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  method: 0
-  style: 0
-  animationCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 2
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 1
-      tangentMode: 0
-    - serializedVersion: 2
-      time: 1
-      value: 1
-      inSlope: 1
-      outSlope: 0
-      tangentMode: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  ignoreTimeScale: 1
-  delay: 0
-  duration: 0.2
-  steeperCurves: 0
-  tweenGroup: 0
-  curTime: 0
-  from: {x: 1, y: 1, z: 1}
-  to: {x: 1, y: 1, z: 1}
---- !u!114 &114689593922631972
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1941936507109202}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2dd29dc5e36c2954d8a6ee564141849a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  iconImage: {fileID: 114981426507402656}
-  nameText: {fileID: 114981840787442084}
-  border: {fileID: 114482213389502488}
-  focusTransit: {fileID: 114904378241941686}
-  showTransit: {fileID: 114473456286186680}
-  clickTransit: {fileID: 114384241146308492}
 --- !u!114 &114713133954294122
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -441,6 +438,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -459,15 +457,56 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList:
+  - serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  - serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
-  duration: 0.3
+  duration: 0.1
   steeperCurves: 0
   tweenGroup: 0
   curTime: 0
   from: {x: 0, y: 0, z: 20}
   to: {x: 0, y: 0, z: 0}
+  tweenX: 1
+  tweenY: 1
+  tweenZ: 1
   worldSpace: 0
+  UseAdditionalCurve: 0
 --- !u!114 &114724531148384806
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -481,6 +520,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   method: 0
   style: 0
+  loopCount: 0
   animationCurve:
     serializedVersion: 2
     m_Curve:
@@ -499,6 +539,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  additionalAnimationCurveList: []
+  startFactor: 0
+  startFactorReverse: 1
   ignoreTimeScale: 1
   delay: 0
   duration: 0.3
@@ -535,32 +578,6 @@ MonoBehaviour:
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
---- !u!114 &114904378241941686
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1941936507109202}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 047e427247acb834681480528826969c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  inTrans: 0
-  isTransIn: 0
-  reverse: 0
-  isWaitingContinue: 0
-  transitGroup: 1
-  needHideWhenTransitOut: 0
-  needShowWhenTransitIn: 0
-  needTransitChild: 0
-  delayType: 0
-  delayTime: 0
-  needResetBeforeTransit: 1
-  transitInTweener:
-  - {fileID: 114398374416609422}
-  transitOutTweener:
-  - {fileID: 114398374416609422}
 --- !u!114 &114981426507402656
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -651,7 +668,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1025305454813698}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -39.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4084526370300348}
@@ -669,7 +686,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1147803247770886}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -1, y: 7.799999, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4084526370300348}

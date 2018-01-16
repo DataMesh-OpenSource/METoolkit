@@ -204,6 +204,8 @@ namespace DataMesh.AR.SpectatorView
         private float lastSaveParamTime;
         private const float saveParamInterval = 1.0f;
 
+        private int frameRate = 60;
+
         protected override void Awake()
         {
             base.Awake();
@@ -247,6 +249,8 @@ namespace DataMesh.AR.SpectatorView
             listenPortUDP = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Live_Port_UDP", "8098"));
             useUDP = bool.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Use_UDP", "TRUE"));
             outputPath = AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile,"Out_Put_Path","C:\\HologramCapture");
+
+            frameRate = int.Parse(AppConfig.Instance.GetConfigByFileName(MEHoloConstant.LiveConfigFile, "Frame_Rate", "60"));
 
             config.LoadConfig(MEHoloConstant.CalibrationConfigFile);
             holoServerHost = config.GetConfigByFileName(MEHoloConstant.NetworkConfigFile, "Server_Host", "127.0.0.1");
@@ -379,6 +383,8 @@ namespace DataMesh.AR.SpectatorView
             }
 
             // 启动 
+            holoCamera.frameRate = frameRate;
+            Debug.Log("Frame=" + frameRate);
             holoCamera.Init(holoServerHost, holoServerPort);
 
             // 调整摄影机
@@ -393,7 +399,7 @@ namespace DataMesh.AR.SpectatorView
             holoCameraTransform = holoCamera.transform;
 
         }
-
+         
         private void SetupCameraValues(Camera camera)
         {
             if (camera == null)

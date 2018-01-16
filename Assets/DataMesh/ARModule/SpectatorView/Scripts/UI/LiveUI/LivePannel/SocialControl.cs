@@ -81,7 +81,14 @@ namespace DataMesh.AR.SpectatorView
                 listAutoRecordTime.Add(jsonTimeData.TimeData[i]);
             }
             SocialAlbumInfo.Instance.listAutoRecordTime = listAutoRecordTime;
-            SocialAlbumInfo.Instance.recordTime = int.Parse(listAutoRecordTime[0]);
+            if (listAutoRecordTime[0] == "无限制")
+            {
+                SocialAlbumInfo.Instance.recordTime = -1;
+            }
+            else
+            {
+                SocialAlbumInfo.Instance.recordTime = int.Parse(listAutoRecordTime[0]);
+            }
         }
 
         /// <summary>
@@ -198,7 +205,7 @@ namespace DataMesh.AR.SpectatorView
             string serverUrl = "http://" + albumURL + ":" + serverPort.ToString();
             string appId = MEHoloEntrance.Instance.AppID;
             float uploadTime = 0;
-            UploadProgressApi uploadProgressApi = null;
+            UploadProgressApi<string> uploadProgressApi = null;
 
             try
             {

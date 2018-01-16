@@ -115,6 +115,7 @@ namespace DataMesh.AR.SpectatorView
         private void ButtonClosePannel(GameObject obj)
         {
             CloseUIForm();
+            MultiInputManager.Instance.cbTap = (Action<int>)cbTapAction;
         }
 
         private void ButtonMoveClickDown(GameObject obj)
@@ -250,7 +251,7 @@ namespace DataMesh.AR.SpectatorView
             LiveController.Instance.LoadTransformByFile(LoadTransType.Camera);
         }
 #else
-      public void OnPointerEnter(PointerEventData data)
+        public void OnPointerEnter(PointerEventData data)
     {
     }
 

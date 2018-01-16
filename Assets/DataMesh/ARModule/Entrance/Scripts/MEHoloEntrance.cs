@@ -7,6 +7,8 @@ using DataMesh.AR;
 using DataMesh.AR.Anchor;
 #endif
 
+using DataMesh.AR.Account;
+using DataMesh.AR.Library;
 using DataMesh.AR.Interactive;
 using DataMesh.AR.SpectatorView;
 using DataMesh.AR.UI;
@@ -26,14 +28,18 @@ namespace DataMesh.AR
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
         public GameObject AnchorPrefab;
 #endif
+        public GameObject AccountPrefab;
         public GameObject InputPrefab;
         public GameObject SpeechPrefab;
         public GameObject UIPerfab;
         public GameObject CollaborationPrefab;
         public GameObject StoragePrefab;
+        public GameObject LibraryPrefab;
         public GameObject SocialPrefab;
         public GameObject LivePrefab;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
+        [HideInInspector]
+        public bool NeedAccount = true;
         [HideInInspector]
         public bool NeedAnchor = true;
 #endif
@@ -49,6 +55,8 @@ namespace DataMesh.AR
         [HideInInspector]
         public bool NeedStorage = true;
         [HideInInspector]
+        public bool NeedLibrary = true;
+        [HideInInspector]
         public bool NeedSocial = true;
         [HideInInspector]
         public bool NeedLive = true;
@@ -57,6 +65,7 @@ namespace DataMesh.AR
         public bool HasInit = false;
 
 
+        private AccountManager accountManager;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
         private SceneAnchorController anchorController;
 #endif
@@ -67,6 +76,7 @@ namespace DataMesh.AR
         private CollaborationManager collaborationManager;
         private MixedRealityCapture mrc;
         private StorageManager storageManager;
+        private LibraryManager libraryManager;
 
         private List<bool> moduleSwitch = new List<bool>();
         private List<MEHoloModule> moduleList = new List<MEHoloModule>();
@@ -121,6 +131,7 @@ namespace DataMesh.AR
         /// </summary>
         private void InitSystem()
         {
+            accountManager = AccountManager.Instance;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
             anchorController = SceneAnchorController.Instance;
 #endif
@@ -130,7 +141,9 @@ namespace DataMesh.AR
             uiManager = UIManager.Instance;
             collaborationManager = CollaborationManager.Instance;
             storageManager = StorageManager.Instance;
+            libraryManager = LibraryManager.Instance;
 
+            moduleSwitch.Add(NeedAccount);
             mrc = MixedRealityCapture.Instance;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
             moduleSwitch.Add(NeedAnchor);
@@ -140,8 +153,11 @@ namespace DataMesh.AR
             moduleSwitch.Add(NeedUI);
             moduleSwitch.Add(NeedCollaboration);
             moduleSwitch.Add(NeedStorage);
+            moduleSwitch.Add(NeedLibrary);
             moduleSwitch.Add(NeedSocial);
             moduleSwitch.Add(NeedLive);
+
+            moduleList.Add(accountManager);
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_WSA
             moduleList.Add(anchorController);
 #endif
@@ -150,6 +166,7 @@ namespace DataMesh.AR
             moduleList.Add(uiManager);
             moduleList.Add(collaborationManager);
             moduleList.Add(storageManager);
+            moduleList.Add(libraryManager);
             moduleList.Add(mrc);
             moduleList.Add(liveController);
 
