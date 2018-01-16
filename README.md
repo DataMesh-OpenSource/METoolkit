@@ -7,6 +7,10 @@
 
 METoolkit is a Unity toolkit for devoloping interactive mixed-reality apps for [HoloLens](https://www.microsoft.com/en-us/hololens "HoloLens Home"), Surface, iPhone/iPad, Android devices, etc. It enables easy-integration with [**MeshExpert Live!&reg;**](https://www.datamesh.com/solution/meshexpert-live "MeshExpert Live!") and [**MeshExpert DataMix&reg;**](https://www.datamesh.com/solution/meshexpert-datamix "MeshExpert DataMix").
 
+## What's New
+
+Now Unity 2017 is supported by METoolkit from release version v2.3.0. The legacy support for Unity 5.5 is moved to another branch '**[METoolkit_2.2_ForUnity5.5.1](https://github.com/DataMesh-OpenSource/METoolkit/tree/METoolkit_2.2_ForUnity5.5.1)**'. **The master branch is only compatible with Unity 2017.** We recommend Unity 2017 when starting a new project.
+
 ## Components
 
 METoolkit consists of nine components for a wide range of functionalities.
