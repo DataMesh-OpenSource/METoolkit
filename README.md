@@ -12,7 +12,8 @@ METoolkit is a Unity toolkit for devoloping interactive mixed-reality apps for [
 METoolkit now supports external capture card, specifically the [BlackMagic Intensity Shuttle capture card](https://www.blackmagicdesign.com/products/intensity).
 > Note: since the Blackmagic Shuttle card only supports up to 30fps, the config parameter "**Frame_Rate=60**" in file "**Assets/StreamingAssets/MEConfigLive.ini**" should be changed to "**Frame_Rate=30**" if you are using Blackmagic Shuttle card.
 
-Now Unity 2017 is supported by METoolkit from release version v2.3.0. The legacy support for Unity 5.5 is moved to another branch '**[METoolkit_2.2_ForUnity5.5.1](https://github.com/DataMesh-OpenSource/METoolkit/tree/METoolkit_2.2_ForUnity5.5.1)**'. **The master branch is only compatible with Unity 2017.** We recommend Unity 2017 when starting a new project.
+Now Unity 2017 is supported by METoolkit from release version v2.3.0. The legacy support for Unity 5.5 is moved to another branch '**[METoolkit_2.2_ForUnity5.5.1](https://github.com/DataMesh-OpenSource/METoolkit/tree/METoolkit_2.2_ForUnity5.5.1)**'. **The master branch is only compatible with Unity 2017.** We recommend Unity 2017.2 when starting a new project.
+> Note: to build with Unity 2017, please set .NET version to **.NET 4.6** in Unity building settings.
 
 ## Components
 
