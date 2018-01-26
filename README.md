@@ -23,6 +23,10 @@ METoolkit consists of nine components for a wide range of functionalities.
 <img src="https://github.com/DataMesh-OpenSource/MeshExpert-Live/blob/master/resources/METoolkit-Structure.png" width="500">
 </p>
 
+## Getting Started
+
+Please check out the examples at [Assets/DataMesh/Samples](https://github.com/DataMesh-OpenSource/METoolkit/tree/master/Assets/DataMesh/Samples). They are runnable code samples for each modules. Also read the [docs](http://docs.datamesh.com/projects/me-live/en/latest/METoolkit-overview/) for those examples. For instance, the sample code for Anchor module can be found [here](https://github.com/DataMesh-OpenSource/METoolkit/tree/master/Assets/DataMesh/Samples/SceneAnchorSample) and its docs are [here](http://docs.datamesh.com/projects/me-live/en/latest/toolkit/toolkit-man-world-anchor-module/).
+
 ## Documentation
 
 For more detailed documentations for METoolkit, see the [**METoolkit Developer Manual**](http://docs.datamesh.com/projects/me-live/en/latest/METoolkit-overview/).
