@@ -507,9 +507,26 @@ namespace DataMesh.AR.SpectatorView
             StopLog();
         }
 
+        bool showMediaUI = true;
+        bool pressed = false;
         // Update is called once per frame
         void Update()
         {
+            if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftControl)) && Input.GetKey(KeyCode.H))
+            {
+                if (!pressed)
+                {
+                    showMediaUI = !showMediaUI;
+                    liveUI.liveUIForms.mediaOperationUIForm.gameObject.SetActive(showMediaUI);
+                    liveUI.liveUIForms.livePreviewUIForm.gameObject.SetActive(showMediaUI);
+                    pressed = true;
+                }
+            }
+            else
+            {
+                pressed = false;
+            }
+
             CheckPerformence();
 
             CheckSyncTransform();
